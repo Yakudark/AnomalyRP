@@ -1,35 +1,71 @@
 import { notFound } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Calendar, User, ChevronRight } from "lucide-react";
+import { ArrowLeft, Calendar, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { createSupabaseClient } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = {
   params: {
     sectionSlug: string;
     articleSlug: string;
   };
+  searchParams?:
+    | {
+        fromCategory?: string;
+      }
+    | Promise<{
+        fromCategory?: string;
+      }>;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function ArticlePage({ params }: Props) {
+type ArticleSection = {
+  title: string;
+  slug: string;
+};
+
+type ArticleDetail = {
+  id: string;
+  title: string;
+  content: string | null;
+  updated_at?: string | null;
+  section: ArticleSection | null;
+};
+
+type RelatedArticle = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string | null;
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  reglement: "Règlements",
+  rp: "Documents RP",
+  guide: "Guides & Aide",
+};
+
+export default async function ArticlePage({ params, searchParams }: Props) {
   const { sectionSlug, articleSlug } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const fromCategory = resolvedSearchParams?.fromCategory;
   const supabase = createSupabaseClient();
 
-  // Récupérer l'article avec sa section
   const { data: article, error } = await supabase
     .from("articles")
-    .select(`
+    .select(
+      `
       *,
       section:sections (
         title,
         slug
       )
-    `)
+    `
+    )
     .eq("slug", articleSlug)
     .eq("is_published", true)
     .single();
@@ -38,12 +74,12 @@ export default async function ArticlePage({ params }: Props) {
     notFound();
   }
 
-  // Vérifier que l'article appartient bien à la section demandée
-  if ((article.section as any)?.slug !== sectionSlug) {
+  const typedArticle = article as ArticleDetail;
+
+  if (typedArticle.section?.slug !== sectionSlug) {
     notFound();
   }
 
-  // Récupérer les sous-articles (si l'article en a)
   const { data: subArticles } = await supabase
     .from("articles")
     .select("id, title, slug, content")
@@ -51,79 +87,71 @@ export default async function ArticlePage({ params }: Props) {
     .eq("is_published", true)
     .order("order_index", { ascending: true });
 
+  const typedSubArticles = (subArticles as RelatedArticle[] | null) ?? [];
+  const categoryLabel = fromCategory ? CATEGORY_LABELS[fromCategory] ?? typedArticle.section?.title : typedArticle.section?.title;
+  const backHref = fromCategory ? `/docs/category/${fromCategory}` : `/docs/${sectionSlug}`;
+  const relatedArticleSuffix = fromCategory ? `?fromCategory=${fromCategory}` : "";
+
   return (
-    <div className="space-y-8 max-w-4xl">
-      {/* Breadcrumb / Navigation */}
+    <div className="anomaly-panel anomaly-outline max-w-5xl space-y-8 p-6 md:p-8">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link href="/" className="transition-colors hover:text-white">
           Accueil
         </Link>
         <span>/</span>
-        <Link 
-          href={`/docs/${sectionSlug}`} 
-          className="hover:text-foreground transition-colors"
-        >
-          {(article.section as any)?.title}
+        <Link href={backHref} className="transition-colors hover:text-white">
+          {categoryLabel}
         </Link>
         <span>/</span>
-        <span className="text-foreground">{article.title}</span>
+        <span className="text-white">{typedArticle.title}</span>
       </div>
 
-      {/* Article Header */}
-      <div className="space-y-4 border-b border-border/50 pb-6">
-        <Link href={`/docs/${sectionSlug}`}>
-          <Button variant="ghost" size="sm" className="gap-2 -ml-2">
+      <div className="space-y-4 border-b border-white/10 pb-6">
+        <Link href={backHref}>
+          <Button variant="ghost" size="sm" className="-ml-2 gap-2 text-primary hover:bg-white/5 hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Retour à {(article.section as any)?.title}
+            Retour à {categoryLabel}
           </Button>
         </Link>
 
-        <h1 className="text-4xl font-bold tracking-tight">
-          {article.title}
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight text-white">{typedArticle.title}</h1>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          {article.updated_at && (
+          {typedArticle.updated_at && (
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Mis à jour le {format(new Date(article.updated_at), "d MMMM yyyy", { locale: fr })}
+              <Calendar className="h-4 w-4 text-primary" />
+              Mis à jour le {format(new Date(typedArticle.updated_at), "d MMMM yyyy", { locale: fr })}
             </div>
           )}
         </div>
       </div>
 
-      {/* Article Content */}
-      <div 
-        className="prose prose-invert prose-lg max-w-none
-          prose-headings:font-bold prose-headings:tracking-tight
-          prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4
-          prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3
-          prose-p:text-muted-foreground prose-p:leading-7 prose-p:my-4
+      <div
+        className="prose prose-invert max-w-none text-[#dde3da]
+          prose-headings:text-white prose-headings:font-bold prose-headings:tracking-tight
+          prose-h2:mt-8 prose-h2:text-2xl prose-h2:text-primary
+          prose-h3:mt-6 prose-h3:text-xl
+          prose-p:my-4 prose-p:leading-7 prose-p:text-[#dde3da]
           prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-          prose-strong:text-foreground prose-strong:font-semibold
+          prose-strong:text-white prose-strong:font-semibold
           prose-ul:my-4 prose-li:my-2
-          prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1
-          prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
-          prose-pre:bg-secondary prose-pre:border prose-pre:border-border"
-        dangerouslySetInnerHTML={{ __html: article.content || "" }}
+          prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2
+          prose-code:rounded prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-primary
+          prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/30"
+        dangerouslySetInnerHTML={{ __html: typedArticle.content || "" }}
       />
 
-      {/* Sub-Articles Section */}
-      {subArticles && subArticles.length > 0 && (
-        <div className="pt-8 border-t border-border/50 space-y-4">
-          <h2 className="text-2xl font-bold tracking-tight">Articles liés</h2>
+      {typedSubArticles.length > 0 && (
+        <div className="space-y-4 border-t border-white/10 pt-8">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Articles liés</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {subArticles.map((subArticle: any) => (
-              <Link 
-                key={subArticle.id}
-                href={`/docs/${sectionSlug}/${subArticle.slug}`}
-                className="group block"
-              >
-                <Card className="h-full transition-all duration-200 hover:border-primary/50 hover:bg-secondary/30 hover:shadow-lg">
+            {typedSubArticles.map((subArticle) => (
+              <Link key={subArticle.id} href={`/docs/${sectionSlug}/${subArticle.slug}${relatedArticleSuffix}`} className="group block">
+                <Card className="anomaly-panel-soft rounded-sm border-white/10 py-0 transition-all duration-200 hover:border-primary/40">
                   <CardHeader>
-                    <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center justify-between">
+                    <CardTitle className="flex items-center justify-between text-lg text-white transition-colors group-hover:text-primary">
                       {subArticle.title}
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
                     </CardTitle>
                     <CardDescription className="line-clamp-2">
                       {subArticle.content?.replace(/<[^>]*>?/gm, "").substring(0, 100)}...
@@ -136,12 +164,11 @@ export default async function ArticlePage({ params }: Props) {
         </div>
       )}
 
-      {/* Footer Navigation */}
-      <div className="pt-8 border-t border-border/50">
-        <Link href={`/docs/${sectionSlug}`}>
-          <Button variant="outline" className="gap-2">
+      <div className="border-t border-white/10 pt-8">
+        <Link href={backHref}>
+          <Button variant="outline" className="gap-2 border-white/10 bg-transparent text-white hover:bg-white/5">
             <ArrowLeft className="h-4 w-4" />
-            Voir tous les articles de {(article.section as any)?.title}
+            Voir tous les articles de {categoryLabel}
           </Button>
         </Link>
       </div>

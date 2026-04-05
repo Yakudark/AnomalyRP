@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ChevronRight, FolderOpen } from "lucide-react";
+import { ChevronRight, FileText, FolderOpen } from "lucide-react";
+import { createSupabaseClient } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = {
   params: {
@@ -12,15 +13,29 @@ type Props = {
 
 export const dynamic = "force-dynamic";
 
+type SectionArticle = {
+  title: string;
+  slug: string;
+  order_index: number;
+  content: string | null;
+  is_published: boolean;
+};
+
+type SectionWithArticles = {
+  title: string;
+  slug: string;
+  description?: string | null;
+  articles?: SectionArticle[];
+};
 
 export default async function SectionPage({ params }: Props) {
   const { sectionSlug } = await params;
   const supabase = createSupabaseClient();
 
-  // 1. Récupérer la section et ses articles
   const { data: section, error } = await supabase
     .from("sections")
-    .select(`
+    .select(
+      `
       *,
       articles (
         title,
@@ -29,7 +44,8 @@ export default async function SectionPage({ params }: Props) {
         content,
         is_published
       )
-    `)
+    `
+    )
     .eq("slug", sectionSlug)
     .single();
 
@@ -37,49 +53,47 @@ export default async function SectionPage({ params }: Props) {
     notFound();
   }
 
-  // Trier les articles par order_index et filtrer les publiés
-  const sortedArticles = section.articles
-    ?.filter((a: any) => a.is_published)
-    .sort((a: any, b: any) => a.order_index - b.order_index) || [];
+  const typedSection = section as SectionWithArticles;
+  const sortedArticles =
+    typedSection.articles?.filter((article) => article.is_published).sort((a, b) => a.order_index - b.order_index) || [];
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2 border-b border-border/50 pb-6">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <FolderOpen className="h-8 w-8 text-primary/80" />
+    <div className="anomaly-panel anomaly-outline space-y-8 p-6 md:p-8">
+      <div className="space-y-2 border-b border-white/10 pb-6">
+        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight text-white">
+          <FolderOpen className="h-8 w-8 text-primary" />
           {section.title}
         </h1>
-        {section.description && (
-          <p className="text-lg text-muted-foreground">
-            {section.description}
-          </p>
-        )}
+          {typedSection.description && <p className="text-lg text-muted-foreground">{typedSection.description}</p>}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid auto-rows-fr gap-4 md:grid-cols-2 lg:grid-cols-3">
         {sortedArticles.length > 0 ? (
-          sortedArticles.map((article: any) => (
-            <Link 
-              key={article.slug} 
-              href={`/docs/${section.slug}/${article.slug}`}
-              className="group block"
-            >
-              <Card className="h-full transition-all duration-200 hover:border-primary/50 hover:bg-secondary/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-lg group-hover:text-primary transition-colors">
+          sortedArticles.map((article) => (
+            <Link key={article.slug} href={`/docs/${typedSection.slug}/${article.slug}`} className="group block h-full">
+              <Card className="anomaly-panel-soft aspect-square h-full rounded-sm border-white/10 py-0 transition-all duration-200 hover:border-primary/40">
+                <CardHeader className="flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <FileText className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                  </div>
+                  <CardTitle className="line-clamp-2 text-lg text-white transition-colors group-hover:text-primary">
                     {article.title}
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                   </CardTitle>
                   <CardDescription className="line-clamp-2">
-                    {/* On essaie d'extraire un extrait du HTML brut pour la description */}
                     {article.content?.replace(/<[^>]*>?/gm, "").substring(0, 100)}...
                   </CardDescription>
                 </CardHeader>
+                <CardContent className="mt-auto">
+                  <Button variant="link" className="h-auto p-0 text-primary group-hover:underline">
+                    En savoir plus →
+                  </Button>
+                </CardContent>
               </Card>
             </Link>
           ))
         ) : (
-          <div className="col-span-2 py-12 text-center text-muted-foreground border border-dashed rounded-lg">
+          <div className="col-span-2 rounded-sm border border-dashed border-white/10 py-12 text-center text-muted-foreground">
             Aucun article publié dans cette section pour le moment.
           </div>
         )}

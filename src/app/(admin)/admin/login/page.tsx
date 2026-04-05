@@ -59,7 +59,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold tracking-tight">Accès Administrateur</CardTitle>
           <CardDescription>
-            Connectez-vous pour gérer le contenu d'AstralWiki.
+            Connectez-vous pour gérer le contenu d'AnomalyWiki.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -116,7 +116,7 @@ export default function LoginPage() {
                     ← Retour à l'accueil
                 </Button>
              </Link>
-             <p className="text-xs text-muted-foreground">Accès restreint aux membres du staff AstralRP.</p>
+             <p className="text-xs text-muted-foreground">Accès restreint aux membres du staff AnomalyRP.</p>
         </CardFooter>
       </Card>
     </div>

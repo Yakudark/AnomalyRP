@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AstralRP Wiki | Documentation Officielle",
-  description: "La source de vérité pour l'univers AstralRP.",
+  title: "AnomalyRP Wiki | Documentation Officielle",
+  description: "La source de vérité pour l'univers AnomalyRP.",
 };
 
 export default function RootLayout({
