@@ -28,6 +28,15 @@ type ArticleSummary = {
   section: SectionSummary | null;
 };
 
+type RawArticleSummary = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string | null;
+  order_index: number;
+  section: SectionSummary[] | SectionSummary | null;
+};
+
 const CATEGORY_INFO: Record<string, { title: string; description: string; icon: LucideIcon; color: string }> = {
   reglement: {
     title: "Règlements",
@@ -82,7 +91,12 @@ export default async function CategoryPage({ params }: Props) {
     notFound();
   }
 
-  const filteredArticles = ((articles as ArticleSummary[] | null) ?? []).filter((article) => article.section?.category === categorySlug);
+  const normalizedArticles: ArticleSummary[] = ((articles as RawArticleSummary[] | null) ?? []).map((article) => ({
+    ...article,
+    section: Array.isArray(article.section) ? article.section[0] ?? null : article.section,
+  }));
+
+  const filteredArticles = normalizedArticles.filter((article) => article.section?.category === categorySlug);
   const Icon = categoryInfo.icon;
 
   return (
