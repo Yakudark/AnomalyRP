@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, ChevronRight, FileText, Map, Shield, type LucideIcon } from "lucide-react";
+import { BookOpen, ChevronRight, FileText, FolderOpen, Map, Shield, type LucideIcon } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = {
   params: {
@@ -14,45 +12,36 @@ type Props = {
 export const dynamic = "force-dynamic";
 
 type SectionSummary = {
+  id: string;
   title: string;
   slug: string;
-  category: string;
+  description: string | null;
+  order_index: number;
 };
 
 type ArticleSummary = {
   id: string;
-  title: string;
-  slug: string;
-  content: string | null;
-  order_index: number;
-  section: SectionSummary | null;
-};
-
-type RawArticleSummary = {
-  id: string;
-  title: string;
-  slug: string;
-  content: string | null;
-  order_index: number;
-  section: SectionSummary[] | SectionSummary | null;
+  section_id: string;
+  parent_article_id: string | null;
+  is_published: boolean;
 };
 
 const CATEGORY_INFO: Record<string, { title: string; description: string; icon: LucideIcon; color: string }> = {
   reglement: {
-    title: "Règlements",
-    description: "Tous les règlements et directives du serveur",
+    title: "Reglement",
+    description: "Toutes les sections du reglement du serveur.",
     icon: BookOpen,
     color: "text-primary",
   },
   rp: {
     title: "Documents RP",
-    description: "Lois, procédures et documents officiels",
+    description: "Lois, procedures et documents officiels.",
     icon: Shield,
     color: "text-white",
   },
   guide: {
     title: "Guides & Aide",
-    description: "Guides et tutoriels pour bien démarrer",
+    description: "Guides et tutoriels pour bien demarrer.",
     icon: Map,
     color: "text-white",
   },
@@ -61,46 +50,43 @@ const CATEGORY_INFO: Record<string, { title: string; description: string; icon: 
 export default async function CategoryPage({ params }: Props) {
   const { categorySlug } = await params;
   const supabase = createSupabaseClient();
-
   const categoryInfo = CATEGORY_INFO[categorySlug];
+
   if (!categoryInfo) {
     notFound();
   }
 
-  const { data: articles, error } = await supabase
-    .from("articles")
-    .select(
-      `
-      id,
-      title,
-      slug,
-      content,
-      order_index,
-      section:sections (
-        title,
-        slug,
-        category
-      )
-    `
-    )
-    .eq("is_published", true)
-    .order("order_index", { ascending: true });
+  const [sectionsResult, articlesResult] = await Promise.all([
+    supabase
+      .from("sections")
+      .select("id, title, slug, description, order_index")
+      .eq("category", categorySlug)
+      .order("order_index", { ascending: true }),
+    supabase
+      .from("articles")
+      .select("id, section_id, parent_article_id, is_published")
+      .eq("is_published", true),
+  ]);
 
-  if (error) {
-    console.error(error);
+  if (sectionsResult.error || articlesResult.error) {
+    console.error(sectionsResult.error || articlesResult.error);
     notFound();
   }
 
-  const normalizedArticles: ArticleSummary[] = ((articles as RawArticleSummary[] | null) ?? []).map((article) => ({
-    ...article,
-    section: Array.isArray(article.section) ? article.section[0] ?? null : article.section,
-  }));
-
-  const filteredArticles = normalizedArticles.filter((article) => article.section?.category === categorySlug);
+  const sections = (sectionsResult.data as SectionSummary[] | null) ?? [];
+  const articles = (articlesResult.data as ArticleSummary[] | null) ?? [];
   const Icon = categoryInfo.icon;
 
   return (
     <div className="anomaly-panel anomaly-outline space-y-8 p-6 md:p-8">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/" className="transition-colors hover:text-white">
+          Accueil
+        </Link>
+        <span>/</span>
+        <span className="text-white">{categoryInfo.title}</span>
+      </div>
+
       <div className="space-y-2 border-b border-white/10 pb-6">
         <h1 className="flex items-center gap-3 text-4xl font-bold tracking-tight text-white">
           <Icon className={`h-10 w-10 ${categoryInfo.color}`} />
@@ -109,39 +95,39 @@ export default async function CategoryPage({ params }: Props) {
         <p className="text-lg text-muted-foreground">{categoryInfo.description}</p>
       </div>
 
-      <div className="grid auto-rows-fr gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredArticles.length > 0 ? (
-          filteredArticles.map((article) => (
-            <Link
-              key={article.id}
-              href={`/docs/${article.section?.slug}/${article.slug}?fromCategory=${categorySlug}`}
-              className="group block h-full"
-            >
-              <Card className="anomaly-panel-soft aspect-square h-full rounded-sm border-white/10 py-0 transition-all duration-200 hover:border-primary/40">
-                <CardHeader className="flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <FileText className="mt-1 h-5 w-5 shrink-0 text-primary" />
-                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                  </div>
-                  <CardTitle className="line-clamp-2 text-lg text-white transition-colors group-hover:text-primary">
-                    {article.title}
-                  </CardTitle>
-                  <CardDescription className="text-xs">{article.section?.title}</CardDescription>
-                </CardHeader>
-                <CardContent className="mt-auto">
-                  <p className="line-clamp-3 text-sm text-muted-foreground">
-                    {article.content?.replace(/<[^>]*>?/gm, "").substring(0, 150)}...
-                  </p>
-                  <Button variant="link" className="mt-3 h-auto p-0 text-primary group-hover:underline">
-                    En savoir plus →
-                  </Button>
-                </CardContent>
-              </Card>
-            </Link>
-          ))
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {sections.length > 0 ? (
+          sections.map((section) => {
+            const rootArticleCount = articles.filter(
+              (article) => article.section_id === section.id && !article.parent_article_id
+            ).length;
+
+            return (
+              <Link
+                key={section.id}
+                href={`/docs/${section.slug}`}
+                className="group block min-h-36 border border-white/10 bg-black/15 p-4 transition-colors hover:border-primary/40"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <FolderOpen className="h-6 w-6 shrink-0 text-primary" />
+                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                </div>
+                <h2 className="mt-4 text-base font-semibold text-white transition-colors group-hover:text-primary">
+                  {section.title}
+                </h2>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
+                  {section.description || "Voir les pages disponibles dans cette section."}
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                  <FileText className="h-4 w-4" />
+                  {rootArticleCount} lien{rootArticleCount > 1 ? "s" : ""}
+                </div>
+              </Link>
+            );
+          })
         ) : (
-          <div className="col-span-full rounded-sm border border-dashed border-white/10 py-12 text-center text-muted-foreground">
-            Aucun article publié dans cette catégorie pour le moment.
+          <div className="col-span-full border border-dashed border-white/10 py-12 text-center text-muted-foreground">
+            Aucune section publiee pour le moment.
           </div>
         )}
       </div>

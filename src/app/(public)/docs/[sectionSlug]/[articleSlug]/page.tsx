@@ -26,12 +26,15 @@ export const dynamic = "force-dynamic";
 type ArticleSection = {
   title: string;
   slug: string;
+  category: string;
 };
 
 type ArticleDetail = {
   id: string;
   title: string;
+  slug: string;
   content: string | null;
+  parent_article_id: string | null;
   updated_at?: string | null;
   section: ArticleSection | null;
 };
@@ -43,8 +46,13 @@ type RelatedArticle = {
   content: string | null;
 };
 
+type ParentArticle = {
+  title: string;
+  slug: string;
+};
+
 const CATEGORY_LABELS: Record<string, string> = {
-  reglement: "Règlements",
+  reglement: "Reglement",
   rp: "Documents RP",
   guide: "Guides & Aide",
 };
@@ -62,7 +70,8 @@ export default async function ArticlePage({ params, searchParams }: Props) {
       *,
       section:sections (
         title,
-        slug
+        slug,
+        category
       )
     `
     )
@@ -83,26 +92,49 @@ export default async function ArticlePage({ params, searchParams }: Props) {
   const { data: subArticles } = await supabase
     .from("articles")
     .select("id, title, slug, content")
-    .eq("parent_article_id", article.id)
+    .eq("parent_article_id", typedArticle.id)
     .eq("is_published", true)
     .order("order_index", { ascending: true });
 
+  const { data: parentArticle } = typedArticle.parent_article_id
+    ? await supabase
+        .from("articles")
+        .select("title, slug")
+        .eq("id", typedArticle.parent_article_id)
+        .eq("is_published", true)
+        .maybeSingle()
+    : { data: null };
+
   const typedSubArticles = (subArticles as RelatedArticle[] | null) ?? [];
-  const categoryLabel = fromCategory ? CATEGORY_LABELS[fromCategory] ?? typedArticle.section?.title : typedArticle.section?.title;
-  const backHref = fromCategory ? `/docs/category/${fromCategory}` : `/docs/${sectionSlug}`;
+  const typedParentArticle = parentArticle as ParentArticle | null;
+  const categorySlug = fromCategory || typedArticle.section?.category || "reglement";
+  const categoryLabel = CATEGORY_LABELS[categorySlug] ?? typedArticle.section?.title;
+  const backHref = typedParentArticle ? `/docs/${sectionSlug}/${typedParentArticle.slug}` : `/docs/${sectionSlug}`;
   const relatedArticleSuffix = fromCategory ? `?fromCategory=${fromCategory}` : "";
 
   return (
     <div className="anomaly-panel anomaly-outline max-w-5xl space-y-8 p-6 md:p-8">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="transition-colors hover:text-white">
           Accueil
         </Link>
         <span>/</span>
-        <Link href={backHref} className="transition-colors hover:text-white">
+        <Link href={`/docs/category/${categorySlug}`} className="transition-colors hover:text-white">
           {categoryLabel}
         </Link>
         <span>/</span>
+        <Link href={`/docs/${sectionSlug}`} className="transition-colors hover:text-white">
+          {typedArticle.section?.title}
+        </Link>
+        <span>/</span>
+        {typedParentArticle && (
+          <>
+            <Link href={`/docs/${sectionSlug}/${typedParentArticle.slug}`} className="transition-colors hover:text-white">
+              {typedParentArticle.title}
+            </Link>
+            <span>/</span>
+          </>
+        )}
         <span className="text-white">{typedArticle.title}</span>
       </div>
 
@@ -110,7 +142,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
         <Link href={backHref}>
           <Button variant="ghost" size="sm" className="-ml-2 gap-2 text-primary hover:bg-white/5 hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Retour à {categoryLabel}
+            Retour a {typedParentArticle?.title || typedArticle.section?.title || categoryLabel}
           </Button>
         </Link>
 
@@ -120,40 +152,42 @@ export default async function ArticlePage({ params, searchParams }: Props) {
           {typedArticle.updated_at && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
-              Mis à jour le {format(new Date(typedArticle.updated_at), "d MMMM yyyy", { locale: fr })}
+              Mis a jour le {format(new Date(typedArticle.updated_at), "d MMMM yyyy", { locale: fr })}
             </div>
           )}
         </div>
       </div>
 
-      <div
-        className="prose prose-invert max-w-none text-[#dde3da]
-          prose-headings:text-white prose-headings:font-bold prose-headings:tracking-tight
-          prose-h2:mt-8 prose-h2:text-2xl prose-h2:text-primary
-          prose-h3:mt-6 prose-h3:text-xl
-          prose-p:my-4 prose-p:leading-7 prose-p:text-[#dde3da]
-          prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-          prose-strong:text-white prose-strong:font-semibold
-          prose-ul:my-4 prose-li:my-2
-          prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2
-          prose-code:rounded prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-primary
-          prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/30"
-        dangerouslySetInnerHTML={{ __html: typedArticle.content || "" }}
-      />
+      {typedArticle.content && (
+        <div
+          className="prose prose-invert max-w-none text-[#dde3da]
+            prose-headings:text-white prose-headings:font-bold prose-headings:tracking-tight
+            prose-h2:mt-8 prose-h2:text-2xl prose-h2:text-primary
+            prose-h3:mt-6 prose-h3:text-xl
+            prose-p:my-4 prose-p:leading-7 prose-p:text-[#dde3da]
+            prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+            prose-strong:text-white prose-strong:font-semibold
+            prose-ul:my-4 prose-li:my-2
+            prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2
+            prose-code:rounded prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-primary
+            prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/30"
+          dangerouslySetInnerHTML={{ __html: typedArticle.content }}
+        />
+      )}
 
       {typedSubArticles.length > 0 && (
         <div className="space-y-4 border-t border-white/10 pt-8">
-          <h2 className="text-2xl font-bold tracking-tight text-white">Articles liés</h2>
-          <div className="grid gap-4 md:grid-cols-2">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Sous-liens</h2>
+          <div className="grid gap-3 md:grid-cols-2">
             {typedSubArticles.map((subArticle) => (
               <Link key={subArticle.id} href={`/docs/${sectionSlug}/${subArticle.slug}${relatedArticleSuffix}`} className="group block">
-                <Card className="anomaly-panel-soft rounded-sm border-white/10 py-0 transition-all duration-200 hover:border-primary/40">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-lg text-white transition-colors group-hover:text-primary">
-                      {subArticle.title}
+                <Card className="anomaly-panel-soft min-h-28 rounded-sm border-white/10 py-0 transition-all duration-200 hover:border-primary/40">
+                  <CardHeader className="gap-2 p-4">
+                    <CardTitle className="flex items-start justify-between gap-3 text-base text-white transition-colors group-hover:text-primary">
+                      <span className="line-clamp-2">{subArticle.title}</span>
                       <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
                     </CardTitle>
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription className="line-clamp-2 text-sm">
                       {subArticle.content?.replace(/<[^>]*>?/gm, "").substring(0, 100)}...
                     </CardDescription>
                   </CardHeader>
@@ -168,7 +202,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
         <Link href={backHref}>
           <Button variant="outline" className="gap-2 border-white/10 bg-transparent text-white hover:bg-white/5">
             <ArrowLeft className="h-4 w-4" />
-            Voir tous les articles de {categoryLabel}
+            Retour
           </Button>
         </Link>
       </div>

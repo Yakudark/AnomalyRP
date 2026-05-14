@@ -10,6 +10,9 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  Home,
+  Link as LinkIcon,
+  ClipboardList,
 } from "lucide-react";
 import { supabaseBrowser as supabase } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
@@ -35,6 +38,24 @@ export function AdminSidebar() {
       icon: FileText,
       href: "/admin/content",
       active: pathname?.startsWith("/admin/content"),
+    },
+    {
+      label: "Accueil",
+      icon: Home,
+      href: "/admin/home",
+      active: pathname === "/admin/home",
+    },
+    {
+      label: "Liens publics",
+      icon: LinkIcon,
+      href: "/admin/links",
+      active: pathname === "/admin/links",
+    },
+    {
+      label: "Questionnaire",
+      icon: ClipboardList,
+      href: "/admin/questionnaire",
+      active: pathname === "/admin/questionnaire",
     },
     {
       label: "Paramètres",

@@ -31,15 +31,18 @@ import {
   MoveDown // AJOUT ICI
 } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
-import { useCallback } from 'react';
+import { type ComponentType, useCallback, useEffect, useRef, useState } from 'react';
 
 type EditorProps = {
   content: string;
   onChange: (html: string) => void;
   editable?: boolean;
+  uploadImage?: (file: File) => Promise<string>;
 };
 
-export function Editor({ content, onChange, editable = true }: EditorProps) {
+export function Editor({ content, onChange, editable = true, uploadImage }: EditorProps) {
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const editor = useEditor({
     extensions: [
       Document,
@@ -103,12 +106,58 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
 
+  useEffect(() => {
+    if (!editor || editor.getHTML() === content) return;
+
+    editor.commands.setContent(content, { emitUpdate: false });
+  }, [content, editor]);
+
+  const insertImageFromUrl = useCallback(() => {
+    if (!editor) return;
+    const url = window.prompt("URL de l'image:");
+
+    if (!url) return;
+
+    editor.chain().focus().setImage({ src: url }).run();
+  }, [editor]);
+
+  const handleImageClick = useCallback(() => {
+    if (uploadImage) {
+      imageInputRef.current?.click();
+      return;
+    }
+
+    insertImageFromUrl();
+  }, [insertImageFromUrl, uploadImage]);
+
+  const handleImageFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+
+      if (!file || !editor || !uploadImage) return;
+
+      setUploadingImage(true);
+
+      try {
+        const url = await uploadImage(file);
+        editor.chain().focus().setImage({ src: url }).run();
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : "Impossible d'envoyer l'image.");
+      } finally {
+        setUploadingImage(false);
+      }
+    },
+    [editor, uploadImage]
+  );
+
   if (!editor) {
     return null;
   }
 
   return (
     <div className="border border-input bg-background/50 rounded-lg overflow-hidden flex flex-col focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
       {/* Toolbar */}
       {editable && (
           <div className="flex flex-wrap items-center gap-1 p-2 border-b border-white/5 bg-white/[0.02]">
@@ -164,12 +213,11 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
                 tooltip="Lien"
             />
             <ToolbarButton 
-                onClick={() => editor.chain().focus().setImage({
-                    src: window.prompt("URL de l'image:") || ""
-                }).run()}
+                onClick={handleImageClick}
                 active={editor.isActive('image')}
                 icon={ImageIcon}
-                tooltip="Image"
+                tooltip={uploadImage ? "Importer une image" : "Image"}
+                disabled={uploadingImage}
             />
             <div className="w-px h-6 bg-white/10 mx-1" />
 
@@ -280,7 +328,15 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
   );
 }
 
-function ToolbarButton({ onClick, active, icon: Icon, tooltip, disabled }: any) {
+type ToolbarButtonProps = {
+    onClick: () => void;
+    active: boolean;
+    icon: ComponentType<{ className?: string }>;
+    tooltip: string;
+    disabled?: boolean;
+};
+
+function ToolbarButton({ onClick, active, icon: Icon, tooltip, disabled }: ToolbarButtonProps) {
     return (
         <Button
             type="button"
