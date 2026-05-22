@@ -188,8 +188,11 @@ export default function ContentPageClient() {
         }>;
 
         const normalizedSections: Section[] = rawSections.map((s) => ({
-          ...s,
+          id: s.id,
+          title: s.title,
+          slug: s.slug,
           category: s.category ?? "", // ✅ jamais null
+          is_visible: s.is_visible ?? true,
         }));
 
         setSections(normalizedSections);
