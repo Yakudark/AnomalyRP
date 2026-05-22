@@ -115,12 +115,12 @@ export function AppSidebar() {
       const supabase = createSupabaseClient();
 
       const [sectionsRes, articlesRes] = await Promise.all([
-        supabase.from("sections").select("*").order("order_index", { ascending: true }),
+        supabase.from("sections").select("*").eq("is_visible", true).order("order_index", { ascending: true }),
         supabase
           .from("articles")
           .select("id, title, slug, section_id, parent_article_id, order_index")
           .eq("is_published", true)
-          .order("order_index", { ascending: true }),
+          .order("order_index", { ascending: false }),
       ]);
 
       if (sectionsRes.data) {

@@ -45,6 +45,7 @@ type Section = {
   title: string;
   category: string;
   slug: string;
+  is_visible?: boolean;
 };
 
 // ✅ Shape réel renvoyé par Supabase (section = tableau)
@@ -63,6 +64,9 @@ type Article = Omit<ArticleApi, "section"> & {
   section: Section | null;
 };
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
 export default function ContentPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,8 +76,10 @@ export default function ContentPageClient() {
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] =
     useState<string>(initialSectionId);
+  const [activeTab, setActiveTab] = useState("articles");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // DND Kit sensors
   const sensors = useSensors(
@@ -116,8 +122,8 @@ export default function ContentPageClient() {
         }
 
         toast.success("Ordre des articles mis à jour !");
-      } catch (apiError: any) {
-        toast.error(apiError.message || "La réorganisation a échoué.");
+      } catch (apiError: unknown) {
+        toast.error(getErrorMessage(apiError, "La réorganisation a échoué."));
         // rollback simple
         setArticles(articles);
       }
@@ -178,6 +184,7 @@ export default function ContentPageClient() {
           title: string;
           slug: string;
           category: string | null;
+          is_visible?: boolean | null;
         }>;
 
         const normalizedSections: Section[] = rawSections.map((s) => ({
@@ -186,16 +193,16 @@ export default function ContentPageClient() {
         }));
 
         setSections(normalizedSections);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err);
-        setError(err.message || "Erreur lors du chargement du contenu.");
+        setError(getErrorMessage(err, "Erreur lors du chargement du contenu."));
       } finally {
         setLoading(false);
       }
     }
 
     fetchContent();
-  }, [selectedSection]);
+  }, [selectedSection, reloadKey]);
 
   // sync URL with selectedSection
   useEffect(() => {
@@ -268,7 +275,7 @@ export default function ContentPageClient() {
         </div>
       </div>
 
-      <Tabs defaultValue="articles" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white/5 border border-white/10 mb-8">
           <TabsTrigger value="articles">
             Tous les articles ({articles.length})
@@ -396,7 +403,7 @@ export default function ContentPageClient() {
         </TabsContent>
 
         <TabsContent value="sections">
-          <SectionsManager sections={sections} />
+          <SectionsManager sections={sections} onSectionsChange={() => setReloadKey((current) => current + 1)} />
         </TabsContent>
       </Tabs>
     </div>

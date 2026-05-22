@@ -61,6 +61,7 @@ export default async function CategoryPage({ params }: Props) {
       .from("sections")
       .select("id, title, slug, description, order_index")
       .eq("category", categorySlug)
+      .eq("is_visible", true)
       .order("order_index", { ascending: true }),
     supabase
       .from("articles")

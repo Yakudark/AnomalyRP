@@ -1,26 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   BookOpen,
-  CheckCircle2,
+  ChevronLeft,
   ChevronRight,
-  Cookie,
   ExternalLink,
   Facebook,
   FileText,
   FolderOpen,
+  Images,
   Home,
   Instagram,
   Link as LinkIcon,
   MessageCircle,
   Music2,
-  ScrollText,
   ShieldCheck,
   ShoppingBag,
-  XCircle,
+  X,
   Youtube,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,36 +67,37 @@ type ArticleCard = {
   parent_article_id: string | null;
 };
 
+type GalleryImage = {
+  id: string;
+  image_url: string;
+  alt_text: string | null;
+  object_position_x: number;
+  object_position_y: number;
+  order_index: number;
+};
+
+type GalleryResponse = {
+  images?: GalleryImage[];
+};
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("accueil");
   const [settings, setSettings] = useState(defaultSiteSettings);
   const [reglementSections, setReglementSections] = useState<SectionCard[]>([]);
   const [reglementArticles, setReglementArticles] = useState<ArticleCard[]>([]);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [showCookieBanner, setShowCookieBanner] = useState(false);
-
-  const score = useMemo(
-    () => settings.questionnaire.reduce((total, question, index) => total + (answers[index] === question.answer ? 1 : 0), 0),
-    [answers, settings.questionnaire]
-  );
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [galleryLoaded, setGalleryLoaded] = useState(false);
+  const [galleryPage, setGalleryPage] = useState(0);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
 
   useEffect(() => {
     loadSiteSettings().then(setSettings);
   }, []);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setShowCookieBanner(localStorage.getItem("astral-cookie-consent") !== "accepted");
-    }, 0);
-
-    return () => window.clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
     const syncTabFromHash = () => {
       const hash = window.location.hash.replace("#", "");
-      if (["accueil", "reglement", "questionnaire", "tebex"].includes(hash)) {
+      if (["accueil", "reglement", "galerie"].includes(hash)) {
         setActiveTab(hash);
       }
     };
@@ -113,7 +113,7 @@ export default function HomePage() {
         supabaseBrowser
           .from("sections")
           .select("id, title, slug, description, order_index")
-          .eq("category", "reglement")
+          .eq("is_visible", true)
           .order("order_index", { ascending: true }),
         supabaseBrowser
           .from("articles")
@@ -133,12 +133,25 @@ export default function HomePage() {
     loadReglementNavigation();
   }, []);
 
-  const socialLinks = settings.socialLinks.filter((social) => social.is_visible);
+  useEffect(() => {
+    async function loadGalleryImages() {
+      const response = await fetch("/api/gallery", { cache: "no-store" });
+      const payload = (await response.json().catch(() => null)) as GalleryResponse | null;
 
-  const acceptCookies = () => {
-    localStorage.setItem("astral-cookie-consent", "accepted");
-    setShowCookieBanner(false);
-  };
+      if (response.ok && payload?.images) {
+        setGalleryImages(payload.images);
+      }
+
+      setGalleryLoaded(true);
+    }
+
+    loadGalleryImages();
+  }, []);
+
+  const galleryPageCount = Math.ceil(galleryImages.length / 9);
+  const visibleGalleryImages = galleryImages.slice(galleryPage * 9, galleryPage * 9 + 9);
+
+  const socialLinks = settings.socialLinks.filter((social) => social.is_visible);
 
   const scrollToTabs = () => {
     window.setTimeout(() => {
@@ -156,7 +169,13 @@ export default function HomePage() {
     <div className="space-y-8">
       <section className="anomaly-panel anomaly-outline relative overflow-hidden">
         <div className="absolute inset-0">
-          <Image src={heroImage} alt="Accueil Anomaly RP" fill priority className="object-cover opacity-35" />
+          <Image
+            src={heroImage}
+            alt="Accueil Anomaly RP"
+            fill
+            priority
+            className="object-cover opacity-35"
+          />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.88),rgba(10,20,10,0.68),rgba(0,0,0,0.9))]" />
         </div>
 
@@ -166,20 +185,28 @@ export default function HomePage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">
                   Serveur{" "}
-                  <Link href="/admin/login" className="text-primary no-underline">
+                  <Link
+                    href="/admin/login"
+                    className="text-primary no-underline"
+                  >
                     roleplay
                   </Link>
                 </p>
-                <h1 className="text-3xl font-extrabold text-white md:text-5xl">Anomaly RP</h1>
+                <h1 className="text-3xl font-extrabold text-white md:text-5xl">
+                  Anomaly RP
+                </h1>
               </div>
             </div>
             <p className="max-w-2xl text-base leading-7 text-[#d6ddd3] md:text-lg">
-              Page principale fictive prete a completer avec les images, le reglement, le questionnaire, Tebex,
-              le RGPD et le bandeau cookies officiels.
+              Bienvenue dans Le Flux. Bienvenue sur Anomaly RP. Un serveur RP
+              Whitelist +18 sur FiveM, pensé pour une immersion totale et une
+              ambiance unique. Retrouve ici le règlement, les informations
+              essentielles, des tutoriels et tout ce qu&apos;il faut pour rejoindre
+              l&apos;expérience.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button asChild onClick={() => goToTab("questionnaire")}>
-                <a href="#questionnaire">Faire le questionnaire</a>
+              <Button asChild onClick={() => goToTab("galerie")}>
+                <a href="#galerie">Voir la galerie</a>
               </Button>
               <Button
                 asChild
@@ -214,28 +241,45 @@ export default function HomePage() {
         }}
         className="space-y-5"
       >
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-sm border border-white/10 bg-[#1d1a1a] p-2 lg:grid-cols-4">
-          <TabsTrigger value="accueil" className="h-11 rounded-sm data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-none">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-3 rounded-sm border border-primary/15 bg-[#081108]/80 p-2 shadow-[0_0_0_1px_rgba(66,233,62,0.08),0_12px_28px_rgba(0,0,0,0.35)] lg:grid-cols-4">
+          <TabsTrigger
+            value="accueil"
+            className="h-12 rounded-sm border border-transparent text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:ring-2 focus-visible:ring-primary/70 data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-[0_0_18px_rgba(66,233,62,0.26)]"
+          >
             <Home className="h-4 w-4" />
             Accueil
           </TabsTrigger>
-          <TabsTrigger value="reglement" className="h-11 rounded-sm data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-none">
+          <TabsTrigger
+            value="reglement"
+            className="h-12 rounded-sm border border-transparent text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:ring-2 focus-visible:ring-primary/70 data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-[0_0_18px_rgba(66,233,62,0.26)]"
+          >
             <BookOpen className="h-4 w-4" />
             Reglement
           </TabsTrigger>
-          <TabsTrigger value="questionnaire" className="h-11 rounded-sm data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-none">
-            <ScrollText className="h-4 w-4" />
-            Questionnaire
+          <TabsTrigger
+            value="galerie"
+            className="h-12 rounded-sm border border-transparent text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:ring-2 focus-visible:ring-primary/70 data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-[0_0_18px_rgba(66,233,62,0.26)]"
+          >
+            <Images className="h-4 w-4" />
+            Galerie
           </TabsTrigger>
-          <TabsTrigger value="tebex" className="h-11 rounded-sm data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-none">
+          <a
+            href={settings.tebexUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent px-3 text-sm font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+          >
             <ShoppingBag className="h-4 w-4" />
-            Tebex
-          </TabsTrigger>
+            Boutique
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </TabsList>
 
         <TabsContent value="accueil" className="space-y-5">
           <section className="anomaly-panel-soft p-6">
-            <h2 className="text-2xl font-bold text-white">{settings.homeTitle}</h2>
+            <h2 className="text-2xl font-bold text-white">
+              {settings.homeTitle}
+            </h2>
             <div
               className="prose prose-invert mt-5 max-w-none text-sm leading-7 text-muted-foreground
                 prose-headings:text-white prose-h2:text-xl prose-h2:text-primary
@@ -248,126 +292,123 @@ export default function HomePage() {
         <TabsContent value="reglement" id="reglement" className="space-y-5">
           <section className="anomaly-panel-soft p-6">
             <h2 className="text-2xl font-bold text-white">Règlement</h2>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              
-            </p>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground"></p>
             <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {reglementSections.length > 0 ? (
-                reglementSections.map((section) => {
-                  const rootArticleCount = reglementArticles.filter(
-                    (article) => article.section_id === section.id && !article.parent_article_id
-                  ).length;
+              {reglementSections.length > 0
+                ? reglementSections.map((section) => {
+                    const rootArticleCount = reglementArticles.filter(
+                      (article) =>
+                        article.section_id === section.id &&
+                        !article.parent_article_id,
+                    ).length;
 
-                  return (
-                    <Link
-                      key={section.id}
-                      href={`/docs/${section.slug}`}
-                      className="group block min-h-36 border border-white/10 bg-black/15 p-4 transition-colors hover:border-primary/40"
+                    return (
+                      <Link
+                        key={section.id}
+                        href={`/docs/${section.slug}`}
+                        className="group block min-h-36 border border-white/10 bg-black/15 p-4 transition-colors hover:border-primary/40"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <FolderOpen className="h-6 w-6 shrink-0 text-primary" />
+                          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                        </div>
+                        <h3 className="mt-4 text-base font-semibold text-white transition-colors group-hover:text-primary">
+                          {section.title}
+                        </h3>
+                        <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
+                          {section.description ||
+                            "Voir les pages disponibles dans cette section."}
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                          <FileText className="h-4 w-4" />
+                          {rootArticleCount} lien
+                          {rootArticleCount > 1 ? "s" : ""}
+                        </div>
+                      </Link>
+                    );
+                  })
+                : rulesPages.map((page) => (
+                    <article
+                      key={page.title}
+                      className="border border-white/10 bg-black/15 p-4"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <FolderOpen className="h-6 w-6 shrink-0 text-primary" />
-                        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                      </div>
-                      <h3 className="mt-4 text-base font-semibold text-white transition-colors group-hover:text-primary">
-                        {section.title}
+                      <h3 className="text-lg font-semibold text-white">
+                        {page.title}
                       </h3>
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                        {section.description || "Voir les pages disponibles dans cette section."}
+                      <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                        {page.text}
                       </p>
-                      <div className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                        <FileText className="h-4 w-4" />
-                        {rootArticleCount} lien{rootArticleCount > 1 ? "s" : ""}
-                      </div>
-                    </Link>
-                  );
-                })
-              ) : (
-                rulesPages.map((page) => (
-                  <article key={page.title} className="border border-white/10 bg-black/15 p-4">
-                    <h3 className="text-lg font-semibold text-white">{page.title}</h3>
-                    <p className="mt-2 text-sm leading-7 text-muted-foreground">{page.text}</p>
-                  </article>
-                ))
-              )}
+                    </article>
+                  ))}
             </div>
           </section>
         </TabsContent>
 
-        <TabsContent value="questionnaire" id="questionnaire" className="space-y-5">
+        <TabsContent value="galerie" id="galerie" className="space-y-5">
           <section className="anomaly-panel-soft p-6">
-            <h2 className="text-2xl font-bold text-white">Questionnaire QCM</h2>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">
-             
-            </p>
-
-            <div className="mt-6 space-y-5">
-              {settings.questionnaire.map((question, questionIndex) => (
-                <fieldset key={question.question} className="border border-white/10 bg-black/15 p-4">
-                  <legend className="px-1 text-sm font-semibold text-white">{question.question}</legend>
-                  <div className="mt-4 space-y-3">
-                    {question.choices.map((choice, choiceIndex) => {
-                      const isSelected = answers[questionIndex] === choiceIndex;
-                      const isCorrect = question.answer === choiceIndex;
-                      const showState = submitted && isSelected;
-
-                      return (
-                        <label
-                          key={choice}
-                          className="flex cursor-pointer items-center justify-between gap-3 border border-white/10 bg-[#171414] px-3 py-3 text-sm text-white hover:border-primary/40"
-                        >
-                          <span className="flex items-center gap-3">
-                            <input
-                              type="radio"
-                              name={`question-${questionIndex}`}
-                              checked={isSelected}
-                              onChange={() => setAnswers((current) => ({ ...current, [questionIndex]: choiceIndex }))}
-                              className="h-4 w-4 accent-primary"
-                            />
-                            {choice}
-                          </span>
-                          {showState && (
-                            isCorrect ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <XCircle className="h-5 w-5 text-red-400" />
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-              ))}
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center gap-4">
-              <Button onClick={() => setSubmitted(true)}>Valider automatiquement</Button>
-              <Button
-                variant="outline"
-                className="border-white/15 bg-black/20 text-white hover:bg-white/10"
-                onClick={() => {
-                  setAnswers({});
-                  setSubmitted(false);
-                }}
-              >
-                Recommencer
-              </Button>
-              {submitted && (
-                <p className="text-sm font-semibold text-white">
-                  Score : {score} / {settings.questionnaire.length}
-                </p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold text-white">Galerie</h2>
+              {galleryPageCount > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-primary/25 bg-[#081108]/80 text-white hover:border-primary/70 hover:bg-primary/10 hover:text-primary"
+                    onClick={() => setGalleryPage((current) => Math.max(current - 1, 0))}
+                    disabled={galleryPage === 0}
+                    aria-label="Images precedentes"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="min-w-16 text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    {galleryPage + 1} / {galleryPageCount}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-primary/25 bg-[#081108]/80 text-white hover:border-primary/70 hover:bg-primary/10 hover:text-primary"
+                    onClick={() => setGalleryPage((current) => Math.min(current + 1, galleryPageCount - 1))}
+                    disabled={galleryPage >= galleryPageCount - 1}
+                    aria-label="Images suivantes"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
             </div>
-          </section>
-        </TabsContent>
 
-        <TabsContent value="tebex" className="space-y-5">
-          <section className="anomaly-panel-soft p-6">
-            <h2 className="text-2xl font-bold text-white">Tebex</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            </p>
-            <Button asChild className="mt-6">
-              <a href={settings.tebexUrl} target="_blank" rel="noreferrer">
-                Ouvrir la boutique fictive
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
+            {!galleryLoaded ? (
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="aspect-video animate-pulse border border-white/10 bg-white/5" />
+                ))}
+              </div>
+            ) : visibleGalleryImages.length > 0 ? (
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {visibleGalleryImages.map((image) => (
+                  <button
+                    type="button"
+                    key={image.id}
+                    className="group relative aspect-video overflow-hidden border border-primary/15 bg-black/20 shadow-[0_12px_28px_rgba(0,0,0,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                    onClick={() => setSelectedGalleryImage(image)}
+                    aria-label={`Ouvrir ${image.alt_text || "image galerie"} en grand`}
+                  >
+                    <Image
+                      src={image.image_url}
+                      alt={image.alt_text || "Image galerie Anomaly"}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      style={{ objectPosition: `${image.object_position_x}% ${image.object_position_y}%` }}
+                    />
+                    <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-primary/40 transition-opacity group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-6 border border-dashed border-white/10 py-12 text-center text-muted-foreground">
+                Aucune image visible pour le moment.
+              </div>
+            )}
           </section>
         </TabsContent>
       </Tabs>
@@ -375,49 +416,69 @@ export default function HomePage() {
       <footer className="anomaly-panel-soft p-6">
         <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
           <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+            <Link
+              href="/mentions-legales"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary hover:underline"
+            >
               <ShieldCheck className="h-5 w-5 text-primary" />
-              RGPD et confidentialite
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-              {settings.rgpdText}
-            </p>
+              Mention légale
+            </Link>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-4">
             {socialLinks.map((social) => {
-              const SocialIcon = socialIconMap[social.icon as keyof typeof socialIconMap] ?? LinkIcon;
+              const SocialIcon =
+                socialIconMap[social.icon as keyof typeof socialIconMap] ??
+                LinkIcon;
 
               return (
-              <Link
-                key={social.id ?? social.label}
-                href={social.url}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={social.label}
-                className="grid h-10 w-10 place-items-center border border-white/10 bg-black/20 text-white transition-colors hover:border-primary/50 hover:text-primary"
-              >
-                <SocialIcon className="h-5 w-5" />
-              </Link>
+                <Link
+                  key={social.id ?? social.label}
+                  href={social.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={social.label}
+                  className="grid h-16 w-16 place-items-center rounded-sm border border-primary/25 bg-[#081108]/80 text-white shadow-[0_0_0_1px_rgba(66,233,62,0.08),0_12px_28px_rgba(0,0,0,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                >
+                  <SocialIcon className="h-8 w-8" />
+                </Link>
               );
             })}
           </div>
         </div>
       </footer>
 
-      {showCookieBanner && (
-        <div className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-5xl border border-white/10 bg-[#1d1a1a] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex gap-3">
-              <Cookie className="mt-1 h-5 w-5 shrink-0 text-primary" />
-              <div>
-                <p className="text-sm font-semibold text-white">Bandeau cookies fictif</p>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  {settings.cookieText}
-                </p>
-              </div>
+      {selectedGalleryImage && (
+        <div
+          className="fixed inset-0 z-[100] grid place-items-center bg-black/85 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label={selectedGalleryImage.alt_text || "Image galerie"}
+          onClick={() => setSelectedGalleryImage(null)}
+        >
+          <div className="relative max-h-[92vh] w-full max-w-6xl" onClick={(event) => event.stopPropagation()}>
+            <Button
+              type="button"
+              size="icon"
+              className="absolute right-3 top-3 z-10 border border-primary/30 bg-[#081108]/90 text-white hover:bg-primary/10 hover:text-primary"
+              onClick={() => setSelectedGalleryImage(null)}
+              aria-label="Fermer l'image"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            <div className="relative h-[82vh] overflow-hidden border border-primary/20 bg-black shadow-[0_0_35px_rgba(66,233,62,0.18)]">
+              <Image
+                src={selectedGalleryImage.image_url}
+                alt={selectedGalleryImage.alt_text || "Image galerie Anomaly"}
+                fill
+                sizes="100vw"
+                className="object-contain"
+                priority
+              />
             </div>
-            <Button onClick={acceptCookies} className="md:shrink-0">Accepter</Button>
+            {selectedGalleryImage.alt_text && (
+              <p className="mt-3 text-center text-sm text-muted-foreground">{selectedGalleryImage.alt_text}</p>
+            )}
           </div>
         </div>
       )}

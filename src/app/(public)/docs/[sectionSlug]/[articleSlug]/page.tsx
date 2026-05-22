@@ -27,6 +27,7 @@ type ArticleSection = {
   title: string;
   slug: string;
   category: string;
+  is_visible?: boolean;
 };
 
 type ArticleDetail = {
@@ -71,7 +72,8 @@ export default async function ArticlePage({ params, searchParams }: Props) {
       section:sections (
         title,
         slug,
-        category
+        category,
+        is_visible
       )
     `
     )
@@ -85,7 +87,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
 
   const typedArticle = article as ArticleDetail;
 
-  if (typedArticle.section?.slug !== sectionSlug) {
+  if (typedArticle.section?.slug !== sectionSlug || typedArticle.section?.is_visible === false) {
     notFound();
   }
 
@@ -94,7 +96,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
     .select("id, title, slug, content")
     .eq("parent_article_id", typedArticle.id)
     .eq("is_published", true)
-    .order("order_index", { ascending: true });
+    .order("order_index", { ascending: false });
 
   const { data: parentArticle } = typedArticle.parent_article_id
     ? await supabase

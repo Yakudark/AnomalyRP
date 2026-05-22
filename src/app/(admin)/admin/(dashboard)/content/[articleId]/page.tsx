@@ -10,8 +10,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Editor } from "@/components/editor/Editor";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { uploadAdminImage } from "@/lib/upload-image";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+type SectionOption = {
+  id: string;
+  title: string;
+  category: string;
+};
+
+type ArticleOption = {
+  id: string;
+  title: string;
+};
+
+type ArticleForm = {
+  title: string;
+  slug: string;
+  section_id: string;
+  parent_article_id: string | null;
+  content: string | null;
+};
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 // Helper simple pour slugifier
 function generateSlug(text: string) {
@@ -19,7 +42,7 @@ function generateSlug(text: string) {
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s\W-]+/g, '-') // Replace spaces and non-word chars with -
+    .replace(/[\s\W-]+/g, '-') // Replace spaces and non-word chars with -
     .replace(/^-+|-+$/g, ''); // Remove leading/trailing -
 }
 
@@ -33,8 +56,8 @@ export default function EditArticlePage() {
   const [sectionId, setSectionId] = useState("");
   const [parentArticleId, setParentArticleId] = useState("");
   const [content, setContent] = useState("<p>Chargement...</p>");
-  const [sections, setSections] = useState<any[]>([]);
-  const [articles, setArticles] = useState<any[]>([]);
+  const [sections, setSections] = useState<SectionOption[]>([]);
+  const [articles, setArticles] = useState<ArticleOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +68,8 @@ export default function EditArticlePage() {
         try {
             // 1. Fetch sections and articles
             const [sectionsRes, articlesRes] = await Promise.all([
-                supabaseBrowser.from("sections").select('*').order('title', { ascending: true }),
-                supabaseBrowser.from("articles").select('id, title').neq('id', articleId).not('parent_article_id', 'is', null).order('title')
+                supabaseBrowser.from("sections").select('id, title, category').order('title', { ascending: true }).returns<SectionOption[]>(),
+                supabaseBrowser.from("articles").select('id, title').neq('id', articleId).is('parent_article_id', null).order('title').returns<ArticleOption[]>()
             ]);
             if (sectionsRes.error) throw sectionsRes.error;
             if (sectionsRes.data) setSections(sectionsRes.data);
@@ -58,7 +81,7 @@ export default function EditArticlePage() {
                 .from("articles")
                 .select('*')
                 .eq('id', articleId)
-                .single();
+                .single<ArticleForm>();
             
             if (articleError) throw articleError;
             if (articleData) {
@@ -69,15 +92,15 @@ export default function EditArticlePage() {
                 setContent(articleData.content || "");
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Erreur lors du chargement des données.", err);
-            setError(err.message || "Erreur lors du chargement des données.");
+            setError(getErrorMessage(err, "Erreur lors du chargement des donnees."));
         } finally {
             setInitLoading(false);
         }
     }
     loadData();
-  }, [articleId, supabaseBrowser]);
+  }, [articleId]);
 
   // Pas d'auto-generate slug sur edit pour éviter de casser les liens existants accidentellement
   // Sauf si le slug est vide, ce qui ne devrait pas arriver sur un edit.
@@ -90,8 +113,6 @@ export default function EditArticlePage() {
 
     setLoading(true);
     setError(null);
-
-    console.log("Content being submitted:", content); // AJOUT DE CONSOLE.LOG ICI
 
     try {
       const { error } = await supabaseBrowser
@@ -112,8 +133,8 @@ export default function EditArticlePage() {
       // Rediriger sans timestamp
       router.push(`/admin/content`);
 
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la sauvegarde.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Erreur lors de la sauvegarde."));
       setLoading(false);
     }
   };
@@ -129,7 +150,7 @@ export default function EditArticlePage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Modifier l'Article</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Modifier l&apos;Article</h1>
           <p className="text-sm text-muted-foreground">Mettez à jour le contenu.</p>
         </div>
       </div>
@@ -146,8 +167,8 @@ export default function EditArticlePage() {
         {/* Main Editor */}
         <div className="lg:col-span-2 space-y-6">
            <div className="space-y-2">
-             <Label>Contenu de l'article</Label>
-             <Editor content={content} onChange={setContent} />
+             <Label>Contenu de l&apos;article</Label>
+             <Editor content={content} onChange={setContent} uploadImage={uploadAdminImage} />
            </div>
         </div>
 

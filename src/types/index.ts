@@ -3,6 +3,7 @@ export type Section = {
     title: string;
     slug: string;
     category: 'reglement' | 'rp' | 'guide';
+    is_visible?: boolean;
     order_index: number;
     icon?: string;
     created_at?: string;
@@ -13,7 +14,7 @@ export type Article = {
     section_id: string;
     title: string;
     slug: string;
-    content: any; // JSON from Tiptap or HTML string
+    content: string | null;
     is_published: boolean;
     order_index: number;
     created_at?: string;

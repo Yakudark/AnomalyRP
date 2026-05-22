@@ -11,6 +11,7 @@ CREATE TABLE sections (
     icon TEXT, 
     -- NOUVEAU: Le "Pilier" auquel appartient cette section
     category TEXT NOT NULL CHECK (category IN ('reglement', 'rp', 'guide')), 
+    is_visible BOOLEAN DEFAULT true NOT NULL,
     order_index INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, MoreVertical, Edit, Trash2, Folder, Loader2 } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Folder, Loader2, Eye, EyeOff } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +17,20 @@ type Section = {
   title: string;
   slug: string;
   category: string;
+  is_visible?: boolean;
   description?: string;
   icon?: string;
 };
 
-export function SectionsManager({ sections }: { sections: Section[] }) {
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
+type SectionsManagerProps = {
+  sections: Section[];
+  onSectionsChange?: () => void;
+};
+
+export function SectionsManager({ sections, onSectionsChange }: SectionsManagerProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,12 +41,14 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
   const [slug, setSlug] = useState("");
   const [category, setCategory] = useState("guide");
   const [description, setDescription] = useState("");
+  const [isVisible, setIsVisible] = useState(true);
 
   const resetForm = () => {
     setTitle("");
     setSlug("");
     setCategory("guide");
     setDescription("");
+    setIsVisible(true);
     setEditingSection(null);
   };
 
@@ -52,6 +63,7 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
     setSlug(section.slug);
     setCategory(section.category);
     setDescription(section.description || "");
+    setIsVisible(section.is_visible ?? true);
     setIsOpen(true);
   };
 
@@ -64,38 +76,57 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
         // Update
         const { error } = await supabaseBrowser
             .from('sections')
-            .update({ title, slug, category, description })
+            .update({ title, slug, category, description, is_visible: isVisible })
             .eq('id', editingSection.id);
         if (error) throw error;
       } else {
         // Create
         const { error } = await supabaseBrowser
             .from('sections')
-            .insert({ title, slug, category, description });
+            .insert({ title, slug, category, description, is_visible: isVisible });
         if (error) throw error;
       }
 
       setIsOpen(false);
       resetForm();
-      router.refresh();
+      refreshSections();
     } catch (error) {
        console.error(error);
-       alert(`Erreur lors de la sauvegarde: ${(error as any).message}`);
+       alert(`Erreur lors de la sauvegarde: ${getErrorMessage(error, "Erreur inconnue.")}`);
     } finally {
       setLoading(false);
     }
   };
   
   const handleDelete = async (id: string) => {
-      if (!confirm("Attention: supprimer une section peut rendre orphelins les articles liés. Continuer ?")) return;
+      if (!confirm("Supprimer cette section supprimera aussi ses articles. Continuer ?")) return;
       
       try {
-          const { error } = await supabaseBrowser.from('sections').delete().eq('id', id);
-          if (error) throw error;
-          router.refresh();
+          const { error: articlesError } = await supabaseBrowser.from('articles').delete().eq('section_id', id);
+          if (articlesError) throw articlesError;
+
+          const { error: sectionError } = await supabaseBrowser.from('sections').delete().eq('id', id);
+          if (sectionError) throw sectionError;
+          refreshSections();
       } catch (error) {
           console.error(error);
-          alert("Erreur lors de la suppression.");
+          alert(`Erreur lors de la suppression: ${getErrorMessage(error, "Erreur inconnue.")}`);
+      }
+  }
+
+  const handleVisibilityToggle = async (section: Section) => {
+      const nextVisibility = !(section.is_visible ?? true);
+
+      try {
+          const { error } = await supabaseBrowser
+              .from('sections')
+              .update({ is_visible: nextVisibility })
+              .eq('id', section.id);
+          if (error) throw error;
+          refreshSections();
+      } catch (error) {
+          console.error(error);
+          alert(`Erreur lors du changement de visibilite: ${getErrorMessage(error, "Erreur inconnue.")}`);
       }
   }
 
@@ -105,6 +136,15 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
       if (!editingSection) { // Only auto-slug on create
           setSlug(val.toLowerCase().trim().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, ''));
       }
+  }
+
+  const refreshSections = () => {
+      if (onSectionsChange) {
+          onSectionsChange();
+          return;
+      }
+
+      router.refresh();
   }
 
   return (
@@ -150,6 +190,15 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
                  <Label>Description (optionnel)</Label>
                  <Input value={description} onChange={e => setDescription(e.target.value)} className="bg-white/5" placeholder="Courte description..." />
                </div>
+               <label className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+                 <span>Visible sur le site</span>
+                 <input
+                    type="checkbox"
+                    checked={isVisible}
+                    onChange={e => setIsVisible(e.target.checked)}
+                    className="h-4 w-4 accent-primary"
+                 />
+               </label>
                
                <Button onClick={handleSave} disabled={loading} className="w-full">
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Enregistrer
@@ -166,6 +215,7 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
               <TableHead>Titre</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Catégorie</TableHead>
+              <TableHead>Visibilite</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -179,6 +229,26 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
                 <TableCell className="font-mono text-xs text-muted-foreground">{section.slug}</TableCell>
                 <TableCell>
                     <Badge variant="outline" className="capitalize">{section.category}</Badge>
+                </TableCell>
+                <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 text-muted-foreground hover:bg-white/5 hover:text-white"
+                      onClick={() => handleVisibilityToggle(section)}
+                    >
+                      {(section.is_visible ?? true) ? (
+                        <>
+                          <Eye className="h-4 w-4 text-primary" />
+                          Visible
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="h-4 w-4 text-red-400" />
+                          Masquee
+                        </>
+                      )}
+                    </Button>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -201,7 +271,7 @@ export function SectionsManager({ sections }: { sections: Section[] }) {
             ))}
             {sections.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-10">Aucune section trouvée.</TableCell>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-10">Aucune section trouvée.</TableCell>
                 </TableRow>
             )}
           </TableBody>

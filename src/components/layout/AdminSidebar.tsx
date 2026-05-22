@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   Home,
   Link as LinkIcon,
-  ClipboardList,
+  Images,
+  ScrollText,
 } from "lucide-react";
 import { supabaseBrowser as supabase } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
@@ -52,10 +53,16 @@ export function AdminSidebar() {
       active: pathname === "/admin/links",
     },
     {
-      label: "Questionnaire",
-      icon: ClipboardList,
-      href: "/admin/questionnaire",
-      active: pathname === "/admin/questionnaire",
+      label: "Mentions legales",
+      icon: ScrollText,
+      href: "/admin/legal",
+      active: pathname === "/admin/legal",
+    },
+    {
+      label: "Galerie",
+      icon: Images,
+      href: "/admin/gallery",
+      active: pathname === "/admin/gallery",
     },
     {
       label: "Paramètres",

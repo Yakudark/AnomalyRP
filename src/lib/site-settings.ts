@@ -175,8 +175,8 @@ export const loadSiteSettings = async (): Promise<SiteSettings> => {
             order_index: social.order_index,
           }))
         : defaultSiteSettings.socialLinks,
-    rgpdText: settingsRow?.rgpd_text || defaultSiteSettings.rgpdText,
-    cookieText: settingsRow?.cookie_text || defaultSiteSettings.cookieText,
+    rgpdText: settingsRow?.rgpd_text ?? defaultSiteSettings.rgpdText,
+    cookieText: settingsRow?.cookie_text ?? defaultSiteSettings.cookieText,
     questionnaire:
       questions.length > 0
         ? questions.map((question) => ({

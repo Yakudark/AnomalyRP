@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Editor } from "@/components/editor/Editor";
 import { defaultSiteSettings, loadSiteSettings, savePublicSettings, type SiteSettings } from "@/lib/site-settings";
+import { uploadAdminImage } from "@/lib/upload-image";
 
 export default function HomeSettingsPage() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
@@ -31,33 +32,6 @@ export default function HomeSettingsPage() {
 
     fetchSettings();
   }, []);
-
-  const uploadHomeImage = async (file: File) => {
-    const { supabaseBrowser } = await import("@/lib/supabase-browser");
-    const { data } = await supabaseBrowser.auth.getSession();
-    const token = data.session?.access_token;
-
-    if (!token) {
-      throw new Error("Session admin introuvable. Reconnecte-toi a l'administration.");
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/admin/uploads", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => null);
-      throw new Error(payload?.error || "Impossible d'envoyer l'image.");
-    }
-
-    const payload = (await response.json()) as { url: string };
-    return payload.url;
-  };
 
   const saveHome = async () => {
     if (!settings.homeTitle.trim()) {
@@ -124,7 +98,7 @@ export default function HomeSettingsPage() {
                 setSettings((current) => ({ ...current, homeContent }));
                 setSaved(false);
               }}
-              uploadImage={uploadHomeImage}
+              uploadImage={uploadAdminImage}
             />
           </div>
         </div>

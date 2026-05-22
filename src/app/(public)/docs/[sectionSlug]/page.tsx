@@ -53,6 +53,7 @@ export default async function SectionPage({ params }: Props) {
     `
     )
     .eq("slug", sectionSlug)
+    .eq("is_visible", true)
     .single();
 
   if (error || !section) {
@@ -63,7 +64,7 @@ export default async function SectionPage({ params }: Props) {
   const allPublishedArticles = typedSection.articles?.filter((article) => article.is_published) || [];
   const rootArticles = allPublishedArticles
     .filter((article) => !article.parent_article_id)
-    .sort((a, b) => a.order_index - b.order_index);
+    .sort((a, b) => b.order_index - a.order_index);
 
   return (
     <div className="anomaly-panel anomaly-outline space-y-8 p-6 md:p-8">

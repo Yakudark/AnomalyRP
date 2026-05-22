@@ -14,6 +14,7 @@ import Heading from '@tiptap/extension-heading';
 import History from '@tiptap/extension-history'; 
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
+import { TextSelection } from '@tiptap/pm/state';
 
 import { Table } from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
@@ -25,8 +26,7 @@ import {
   Bold as BoldIcon, Italic as ItalicIcon, List, ListOrdered, Quote, Undo, Redo, 
   Heading2, Heading3, Link as LinkIcon, Image as ImageIcon, 
   Table as TableIcon, Table2, 
-  Plus, Minus, 
-  TableProperties, 
+  Rows3, Columns3, PanelBottomOpen, PanelBottomClose, PanelRightOpen, PanelRightClose,
   TableCellsMerge, TableCellsSplit,
   MoveDown // AJOUT ICI
 } from 'lucide-react'; 
@@ -151,6 +151,41 @@ export function Editor({ content, onChange, editable = true, uploadImage }: Edit
     [editor, uploadImage]
   );
 
+  const insertParagraphAfterTable = useCallback(() => {
+    if (!editor) return;
+
+    editor
+      .chain()
+      .focus()
+      .command(({ state, dispatch }) => {
+        const { $from } = state.selection;
+        let tableDepth: number | null = null;
+
+        for (let depth = $from.depth; depth > 0; depth -= 1) {
+          if ($from.node(depth).type.name === "table") {
+            tableDepth = depth;
+            break;
+          }
+        }
+
+        if (tableDepth === null) {
+          return editor.commands.insertContent("<p></p>");
+        }
+
+        const insertPosition = $from.after(tableDepth);
+        const paragraph = state.schema.nodes.paragraph.create();
+
+        if (!dispatch) return true;
+
+        const transaction = state.tr.insert(insertPosition, paragraph);
+        transaction.setSelection(TextSelection.near(transaction.doc.resolve(insertPosition + 1)));
+        dispatch(transaction.scrollIntoView());
+
+        return true;
+      })
+      .run();
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
@@ -223,37 +258,37 @@ export function Editor({ content, onChange, editable = true, uploadImage }: Edit
 
             {/* Boutons pour les tableaux */}
             <ToolbarButton 
-                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).insertContent('<p></p>').run()}
+                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
                 active={editor.isActive('table')}
                 icon={TableIcon}
                 tooltip="Insérer un tableau (3x3)"
             />
             <ToolbarButton 
                 onClick={() => editor.chain().focus().addRowAfter().run()}
-                active={editor.isActive('table')}
-                icon={Plus} 
+                active={false}
+                icon={PanelBottomOpen} 
                 tooltip="Ajouter une ligne en dessous"
                 disabled={!editor.isActive('table')}
             />
             <ToolbarButton 
                 onClick={() => editor.chain().focus().deleteRow().run()}
-                active={editor.isActive('table')}
-                icon={Minus} 
-                tooltip="Supprimer la ligne"
+                active={false}
+                icon={PanelBottomClose} 
+                tooltip="Supprimer la ligne active"
                 disabled={!editor.isActive('table')}
             />
             <ToolbarButton 
                 onClick={() => editor.chain().focus().addColumnAfter().run()}
-                active={editor.isActive('table')}
-                icon={Plus} 
+                active={false}
+                icon={PanelRightOpen} 
                 tooltip="Ajouter une colonne à droite"
                 disabled={!editor.isActive('table')}
             />
             <ToolbarButton 
                 onClick={() => editor.chain().focus().deleteColumn().run()}
-                active={editor.isActive('table')}
-                icon={Minus} 
-                tooltip="Supprimer la colonne"
+                active={false}
+                icon={PanelRightClose} 
+                tooltip="Supprimer la colonne active"
                 disabled={!editor.isActive('table')}
             />
             <ToolbarButton 
@@ -267,14 +302,14 @@ export function Editor({ content, onChange, editable = true, uploadImage }: Edit
             <ToolbarButton 
                 onClick={() => editor.chain().focus().toggleHeaderColumn().run()}
                 active={editor.isActive('tableHeader')}
-                icon={TableProperties} 
+                icon={Columns3} 
                 tooltip="Activer/Désactiver l'en-tête de colonne"
                 disabled={!editor.isActive('table')}
             />
             <ToolbarButton 
                 onClick={() => editor.chain().focus().toggleHeaderRow().run()}
                 active={editor.isActive('tableHeader')}
-                icon={TableProperties} 
+                icon={Rows3} 
                 tooltip="Activer/Désactiver l'en-tête de ligne"
                 disabled={!editor.isActive('table')}
             />
@@ -296,7 +331,7 @@ export function Editor({ content, onChange, editable = true, uploadImage }: Edit
 
             {/* Nouveau bouton: Ajouter un paragraphe en dessous */} 
             <ToolbarButton
-                onClick={() => editor.chain().focus().insertContent('<p></p>').run()}
+                onClick={insertParagraphAfterTable}
                 active={false}
                 icon={MoveDown}
                 tooltip="Ajouter un paragraphe en dessous"

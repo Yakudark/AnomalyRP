@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, Home, Link as LinkIcon } from "lucide-react";
+import { Home, Images, Link as LinkIcon, ScrollText } from "lucide-react";
 
 const settingLinks = [
   {
@@ -15,10 +15,16 @@ const settingLinks = [
     icon: LinkIcon,
   },
   {
-    title: "Questionnaire",
-    description: "Modifier les questions, reponses et corrections du QCM.",
-    href: "/admin/questionnaire",
-    icon: ClipboardList,
+    title: "Mentions legales",
+    description: "Ajouter, modifier ou supprimer le texte des mentions legales.",
+    href: "/admin/legal",
+    icon: ScrollText,
+  },
+  {
+    title: "Galerie",
+    description: "Ajouter, masquer ou supprimer les images de la galerie.",
+    href: "/admin/gallery",
+    icon: Images,
   },
 ];
 

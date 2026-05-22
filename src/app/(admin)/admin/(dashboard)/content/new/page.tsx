@@ -10,8 +10,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Editor } from "@/components/editor/Editor";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { uploadAdminImage } from "@/lib/upload-image";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+type SectionOption = {
+  id: string;
+  title: string;
+  category: string;
+};
+
+type ArticleOption = {
+  id: string;
+  title: string;
+};
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 // Helper simple pour slugifier
 function generateSlug(text: string) {
@@ -31,8 +46,8 @@ export default function NewArticlePage() {
   const [sectionId, setSectionId] = useState("");
   const [parentArticleId, setParentArticleId] = useState("");
   const [content, setContent] = useState("<p>Commencez à rédiger...</p>");
-  const [sections, setSections] = useState<any[]>([]);
-  const [articles, setArticles] = useState<any[]>([]);
+  const [sections, setSections] = useState<SectionOption[]>([]);
+  const [articles, setArticles] = useState<ArticleOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +56,8 @@ export default function NewArticlePage() {
   useEffect(() => {
     async function loadData() {
       const [sectionsRes, articlesRes] = await Promise.all([
-        supabaseBrowser.from("sections").select('*'),
-        supabaseBrowser.from("articles").select('id, title').eq('parent_article_id', null).order('title')
+        supabaseBrowser.from("sections").select('id, title, category').returns<SectionOption[]>(),
+        supabaseBrowser.from("articles").select('id, title').eq('parent_article_id', null).order('title').returns<ArticleOption[]>()
       ]);
       if (sectionsRes.data) setSections(sectionsRes.data);
       if (articlesRes.data) setArticles(articlesRes.data);
@@ -70,7 +85,7 @@ export default function NewArticlePage() {
     setError(null);
 
     try {
-      const { data, error } = await supabaseBrowser.from('articles').insert({
+      const { error } = await supabaseBrowser.from('articles').insert({
         title,
         slug,
         section_id: sectionId,
@@ -90,8 +105,8 @@ export default function NewArticlePage() {
         router.push(`/admin/content?t=${timestamp}`);
       }
 
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la sauvegarde.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Erreur lors de la sauvegarde."));
       setLoading(false);
     }
   };
@@ -124,8 +139,8 @@ export default function NewArticlePage() {
         {/* Main Editor */}
         <div className="lg:col-span-2 space-y-6">
            <div className="space-y-2">
-             <Label>Contenu de l'article</Label>
-             <Editor content={content} onChange={setContent} />
+             <Label>Contenu de l&apos;article</Label>
+             <Editor content={content} onChange={setContent} uploadImage={uploadAdminImage} />
            </div>
         </div>
 
