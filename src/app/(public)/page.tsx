@@ -80,6 +80,17 @@ type GalleryResponse = {
   images?: GalleryImage[];
 };
 
+function shuffleImages(images: GalleryImage[]) {
+  const shuffled = [...images];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("accueil");
   const [settings, setSettings] = useState(defaultSiteSettings);
@@ -88,6 +99,8 @@ export default function HomePage() {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [galleryPage, setGalleryPage] = useState(0);
+  const [homeCarouselIndex, setHomeCarouselIndex] = useState(0);
+  const [homeCarouselImages, setHomeCarouselImages] = useState<GalleryImage[]>([]);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
 
   useEffect(() => {
@@ -140,6 +153,7 @@ export default function HomePage() {
 
       if (response.ok && payload?.images) {
         setGalleryImages(payload.images);
+        setHomeCarouselImages(shuffleImages(payload.images).slice(0, 8));
       }
 
       setGalleryLoaded(true);
@@ -150,7 +164,8 @@ export default function HomePage() {
 
   const galleryPageCount = Math.ceil(galleryImages.length / 9);
   const visibleGalleryImages = galleryImages.slice(galleryPage * 9, galleryPage * 9 + 9);
-  const homeCarouselImages = galleryImages.slice(0, 8);
+  const homeVisibleImages = homeCarouselImages.slice(homeCarouselIndex * 4, homeCarouselIndex * 4 + 4);
+  const homeCarouselPageCount = Math.ceil(homeCarouselImages.length / 4);
   const selectedGalleryImageIndex = selectedGalleryImage
     ? galleryImages.findIndex((image) => image.id === selectedGalleryImage.id)
     : -1;
@@ -188,6 +203,16 @@ export default function HomePage() {
   const showNextGalleryImage = () => {
     if (!galleryImages.length || selectedGalleryImageIndex < 0) return;
     showGalleryImageAt((selectedGalleryImageIndex + 1) % galleryImages.length);
+  };
+
+  const showPreviousHomeCarouselImage = () => {
+    if (!homeCarouselPageCount) return;
+    setHomeCarouselIndex((current) => (current - 1 + homeCarouselPageCount) % homeCarouselPageCount);
+  };
+
+  const showNextHomeCarouselImage = () => {
+    if (!homeCarouselPageCount) return;
+    setHomeCarouselIndex((current) => (current + 1) % homeCarouselPageCount);
   };
 
   return (
@@ -325,25 +350,66 @@ export default function HomePage() {
                   Voir toutes les images
                 </Button>
               </div>
-              <div className="mt-5 flex snap-x gap-4 overflow-x-auto pb-2">
-                {homeCarouselImages.map((image) => (
-                  <button
-                    type="button"
-                    key={image.id}
-                    className="group relative h-40 w-72 shrink-0 snap-start overflow-hidden border border-primary/15 bg-black/20 shadow-[0_12px_28px_rgba(0,0,0,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 md:h-48 md:w-80"
-                    onClick={() => openGalleryImage(image)}
-                    aria-label={`Ouvrir ${image.alt_text || "image galerie"} en grand`}
-                  >
-                    <Image
-                      src={image.image_url}
-                      alt={image.alt_text || "Image galerie Anomaly"}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      style={{ objectPosition: `${image.object_position_x}% ${image.object_position_y}%` }}
-                    />
-                    <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-primary/40 transition-opacity group-hover:opacity-100" />
-                  </button>
-                ))}
+              <div className="relative mt-5 border border-primary/20 bg-black/25 p-4 shadow-[0_0_0_1px_rgba(66,233,62,0.08),0_18px_44px_rgba(0,0,0,0.35)]">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {homeVisibleImages.map((image) => (
+                    <button
+                      type="button"
+                      key={image.id}
+                      className="group relative aspect-video overflow-hidden border border-primary/15 bg-black/30 shadow-[0_12px_28px_rgba(0,0,0,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                      onClick={() => openGalleryImage(image)}
+                      aria-label={`Ouvrir ${image.alt_text || "image galerie"} en grand`}
+                    >
+                      <Image
+                        src={image.image_url}
+                        alt={image.alt_text || "Image galerie Anomaly"}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        style={{ objectPosition: `${image.object_position_x}% ${image.object_position_y}%` }}
+                      />
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.42))] opacity-0 transition-opacity group-hover:opacity-100" />
+                      <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-primary/50 transition-opacity group-hover:opacity-100" />
+                    </button>
+                  ))}
+                </div>
+
+                {homeCarouselPageCount > 1 && (
+                  <>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="absolute left-2 top-1/2 h-12 w-12 -translate-y-1/2 border-2 border-primary bg-[#081108] text-primary shadow-[0_0_0_2px_rgba(0,0,0,0.75),0_0_28px_rgba(66,233,62,0.42)] hover:border-primary hover:!bg-primary hover:!text-[#081108] hover:shadow-[0_0_0_2px_rgba(0,0,0,0.85),0_0_36px_rgba(66,233,62,0.65)] md:-left-4 md:h-14 md:w-14"
+                      onClick={showPreviousHomeCarouselImage}
+                      aria-label="Vignettes précédentes"
+                    >
+                      <ChevronLeft className="h-7 w-7" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="absolute right-2 top-1/2 h-12 w-12 -translate-y-1/2 border-2 border-primary bg-[#081108] text-primary shadow-[0_0_0_2px_rgba(0,0,0,0.75),0_0_28px_rgba(66,233,62,0.42)] hover:border-primary hover:!bg-primary hover:!text-[#081108] hover:shadow-[0_0_0_2px_rgba(0,0,0,0.85),0_0_36px_rgba(66,233,62,0.65)] md:-right-4 md:h-14 md:w-14"
+                      onClick={showNextHomeCarouselImage}
+                      aria-label="Vignettes suivantes"
+                    >
+                      <ChevronRight className="h-7 w-7" />
+                    </Button>
+                    <div className="mt-4 flex justify-center gap-2">
+                      {Array.from({ length: homeCarouselPageCount }).map((_, index) => (
+                        <button
+                          type="button"
+                          key={index}
+                          className={`h-2.5 w-8 border border-primary/40 transition-colors ${
+                            index === homeCarouselIndex ? "bg-primary" : "bg-[#081108]/80 hover:bg-primary/40"
+                          }`}
+                          onClick={() => setHomeCarouselIndex(index)}
+                          aria-label={`Afficher les vignettes ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </section>
           )}
