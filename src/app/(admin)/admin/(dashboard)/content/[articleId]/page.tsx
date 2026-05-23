@@ -68,8 +68,8 @@ export default function EditArticlePage() {
         try {
             // 1. Fetch sections and articles
             const [sectionsRes, articlesRes] = await Promise.all([
-                supabaseBrowser.from("sections").select('id, title, category').order('title', { ascending: true }).returns<SectionOption[]>(),
-                supabaseBrowser.from("articles").select('id, title').neq('id', articleId).is('parent_article_id', null).order('title').returns<ArticleOption[]>()
+                supabaseBrowser.from("sections").select('id, title, category').order('order_index', { ascending: true }).returns<SectionOption[]>(),
+                supabaseBrowser.from("articles").select('id, title').neq('id', articleId).is('parent_article_id', null).order('order_index', { ascending: true }).returns<ArticleOption[]>()
             ]);
             if (sectionsRes.error) throw sectionsRes.error;
             if (sectionsRes.data) setSections(sectionsRes.data);

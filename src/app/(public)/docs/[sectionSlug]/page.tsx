@@ -64,7 +64,7 @@ export default async function SectionPage({ params }: Props) {
   const allPublishedArticles = typedSection.articles?.filter((article) => article.is_published) || [];
   const rootArticles = allPublishedArticles
     .filter((article) => !article.parent_article_id)
-    .sort((a, b) => b.order_index - a.order_index);
+    .sort((a, b) => a.order_index - b.order_index);
 
   return (
     <div className="anomaly-panel anomaly-outline space-y-8 p-6 md:p-8">
@@ -74,7 +74,7 @@ export default async function SectionPage({ params }: Props) {
         </Link>
         <span>/</span>
         <Link href="/#reglement" className="transition-colors hover:text-white">
-          Reglement
+          Règlement
         </Link>
         <span>/</span>
         <span className="text-white">{typedSection.title}</span>
@@ -119,7 +119,7 @@ export default async function SectionPage({ params }: Props) {
           })
         ) : (
           <div className="col-span-full border border-dashed border-white/10 py-12 text-center text-muted-foreground">
-            Aucun article publie dans cette section pour le moment.
+            Aucun article publié dans cette section pour le moment.
           </div>
         )}
       </div>

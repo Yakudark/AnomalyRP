@@ -120,7 +120,7 @@ export function AppSidebar() {
           .from("articles")
           .select("id, title, slug, section_id, parent_article_id, order_index")
           .eq("is_published", true)
-          .order("order_index", { ascending: false }),
+          .order("order_index", { ascending: true }),
       ]);
 
       if (sectionsRes.data) {

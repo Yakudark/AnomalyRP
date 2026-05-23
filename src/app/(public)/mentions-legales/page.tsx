@@ -25,7 +25,7 @@ export default async function MentionsLegalesPage() {
       <Link href="/">
         <Button variant="ghost" size="sm" className="-ml-2 gap-2 text-primary hover:bg-white/5 hover:text-primary">
           <ArrowLeft className="h-4 w-4" />
-          Retour a l&apos;accueil
+          Retour à l&apos;accueil
         </Button>
       </Link>
 

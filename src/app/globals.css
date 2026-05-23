@@ -8,6 +8,38 @@
   margin-bottom: 1.25em;
 }
 
+.prose p:empty::before {
+  content: "\00a0";
+}
+
+.prose img[data-align="left"] {
+  display: block;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.prose img[data-align="center"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.prose img[data-align="right"] {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.tiptap img {
+  cursor: pointer;
+  user-select: none;
+}
+
+.tiptap .ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
 .prose h2 {
   font-size: 1.5em;
   font-weight: bold;

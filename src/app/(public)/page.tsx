@@ -32,7 +32,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 const rulesPages = [
   {
     title: "1. Respect et comportement",
-    text: "Texte fictif du reglement. Remplacer cette section par les consignes officielles du serveur.",
+    text: "Texte fictif du règlement. Remplacer cette section par les consignes officielles du serveur.",
   },
   {
     title: "2. Roleplay et coherence",
@@ -150,6 +150,10 @@ export default function HomePage() {
 
   const galleryPageCount = Math.ceil(galleryImages.length / 9);
   const visibleGalleryImages = galleryImages.slice(galleryPage * 9, galleryPage * 9 + 9);
+  const homeCarouselImages = galleryImages.slice(0, 8);
+  const selectedGalleryImageIndex = selectedGalleryImage
+    ? galleryImages.findIndex((image) => image.id === selectedGalleryImage.id)
+    : -1;
 
   const socialLinks = settings.socialLinks.filter((social) => social.is_visible);
 
@@ -163,6 +167,27 @@ export default function HomePage() {
     setActiveTab(value);
     window.history.replaceState(null, "", `#${value}`);
     scrollToTabs();
+  };
+
+  const openGalleryImage = (image: GalleryImage) => {
+    setSelectedGalleryImage(image);
+  };
+
+  const showGalleryImageAt = (index: number) => {
+    const image = galleryImages[index];
+    if (image) {
+      setSelectedGalleryImage(image);
+    }
+  };
+
+  const showPreviousGalleryImage = () => {
+    if (!galleryImages.length || selectedGalleryImageIndex < 0) return;
+    showGalleryImageAt((selectedGalleryImageIndex - 1 + galleryImages.length) % galleryImages.length);
+  };
+
+  const showNextGalleryImage = () => {
+    if (!galleryImages.length || selectedGalleryImageIndex < 0) return;
+    showGalleryImageAt((selectedGalleryImageIndex + 1) % galleryImages.length);
   };
 
   return (
@@ -214,7 +239,7 @@ export default function HomePage() {
                 className="border-white/15 bg-black/30 text-white hover:bg-white/10"
                 onClick={() => goToTab("reglement")}
               >
-                <a href="#reglement">Voir le reglement</a>
+                <a href="#reglement">Voir le règlement</a>
               </Button>
             </div>
           </div>
@@ -254,7 +279,7 @@ export default function HomePage() {
             className="h-12 rounded-sm border border-transparent text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:ring-2 focus-visible:ring-primary/70 data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-[0_0_18px_rgba(66,233,62,0.26)]"
           >
             <BookOpen className="h-4 w-4" />
-            Reglement
+            Règlement
           </TabsTrigger>
           <TabsTrigger
             value="galerie"
@@ -287,6 +312,41 @@ export default function HomePage() {
               dangerouslySetInnerHTML={{ __html: settings.homeContent }}
             />
           </section>
+
+          {homeCarouselImages.length > 0 && (
+            <section className="anomaly-panel-soft overflow-hidden p-6">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-2xl font-bold text-white">Galerie</h2>
+                <Button
+                  variant="link"
+                  className="h-auto p-0 text-primary"
+                  onClick={() => goToTab("galerie")}
+                >
+                  Voir toutes les images
+                </Button>
+              </div>
+              <div className="mt-5 flex snap-x gap-4 overflow-x-auto pb-2">
+                {homeCarouselImages.map((image) => (
+                  <button
+                    type="button"
+                    key={image.id}
+                    className="group relative h-40 w-72 shrink-0 snap-start overflow-hidden border border-primary/15 bg-black/20 shadow-[0_12px_28px_rgba(0,0,0,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 md:h-48 md:w-80"
+                    onClick={() => openGalleryImage(image)}
+                    aria-label={`Ouvrir ${image.alt_text || "image galerie"} en grand`}
+                  >
+                    <Image
+                      src={image.image_url}
+                      alt={image.alt_text || "Image galerie Anomaly"}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      style={{ objectPosition: `${image.object_position_x}% ${image.object_position_y}%` }}
+                    />
+                    <div className="absolute inset-0 opacity-0 ring-1 ring-inset ring-primary/40 transition-opacity group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
         </TabsContent>
 
         <TabsContent value="reglement" id="reglement" className="space-y-5">
@@ -390,7 +450,7 @@ export default function HomePage() {
                     type="button"
                     key={image.id}
                     className="group relative aspect-video overflow-hidden border border-primary/15 bg-black/20 shadow-[0_12px_28px_rgba(0,0,0,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
-                    onClick={() => setSelectedGalleryImage(image)}
+                    onClick={() => openGalleryImage(image)}
                     aria-label={`Ouvrir ${image.alt_text || "image galerie"} en grand`}
                   >
                     <Image
@@ -421,7 +481,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary hover:underline"
             >
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Mention légale
+              Mentions légales
             </Link>
           </div>
 
@@ -466,6 +526,30 @@ export default function HomePage() {
             >
               <X className="h-5 w-5" />
             </Button>
+            {galleryImages.length > 1 && (
+              <>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="absolute left-3 top-1/2 z-10 -translate-y-1/2 border-primary/30 bg-[#081108]/90 text-white hover:bg-primary/10 hover:text-primary"
+                  onClick={showPreviousGalleryImage}
+                  aria-label="Image précédente"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="absolute right-3 top-1/2 z-10 -translate-y-1/2 border-primary/30 bg-[#081108]/90 text-white hover:bg-primary/10 hover:text-primary"
+                  onClick={showNextGalleryImage}
+                  aria-label="Image suivante"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </>
+            )}
             <div className="relative h-[82vh] overflow-hidden border border-primary/20 bg-black shadow-[0_0_35px_rgba(66,233,62,0.18)]">
               <Image
                 src={selectedGalleryImage.image_url}

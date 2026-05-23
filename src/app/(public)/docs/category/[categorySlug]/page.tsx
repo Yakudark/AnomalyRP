@@ -28,20 +28,20 @@ type ArticleSummary = {
 
 const CATEGORY_INFO: Record<string, { title: string; description: string; icon: LucideIcon; color: string }> = {
   reglement: {
-    title: "Reglement",
-    description: "Toutes les sections du reglement du serveur.",
+    title: "Règlement",
+    description: "Toutes les sections du règlement du serveur.",
     icon: BookOpen,
     color: "text-primary",
   },
   rp: {
     title: "Documents RP",
-    description: "Lois, procedures et documents officiels.",
+    description: "Lois, procédures et documents officiels.",
     icon: Shield,
     color: "text-white",
   },
   guide: {
     title: "Guides & Aide",
-    description: "Guides et tutoriels pour bien demarrer.",
+    description: "Guides et tutoriels pour bien démarrer.",
     icon: Map,
     color: "text-white",
   },
@@ -128,7 +128,7 @@ export default async function CategoryPage({ params }: Props) {
           })
         ) : (
           <div className="col-span-full border border-dashed border-white/10 py-12 text-center text-muted-foreground">
-            Aucune section publiee pour le moment.
+            Aucune section publiée pour le moment.
           </div>
         )}
       </div>

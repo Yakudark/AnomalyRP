@@ -53,7 +53,7 @@ type ParentArticle = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  reglement: "Reglement",
+  reglement: "Règlement",
   rp: "Documents RP",
   guide: "Guides & Aide",
 };
@@ -96,7 +96,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
     .select("id, title, slug, content")
     .eq("parent_article_id", typedArticle.id)
     .eq("is_published", true)
-    .order("order_index", { ascending: false });
+    .order("order_index", { ascending: true });
 
   const { data: parentArticle } = typedArticle.parent_article_id
     ? await supabase
@@ -144,7 +144,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
         <Link href={backHref}>
           <Button variant="ghost" size="sm" className="-ml-2 gap-2 text-primary hover:bg-white/5 hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Retour a {typedParentArticle?.title || typedArticle.section?.title || categoryLabel}
+            Retour à {typedParentArticle?.title || typedArticle.section?.title || categoryLabel}
           </Button>
         </Link>
 
@@ -154,7 +154,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
           {typedArticle.updated_at && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
-              Mis a jour le {format(new Date(typedArticle.updated_at), "d MMMM yyyy", { locale: fr })}
+              Mis à jour le {format(new Date(typedArticle.updated_at), "d MMMM yyyy", { locale: fr })}
             </div>
           )}
         </div>
@@ -169,6 +169,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
             prose-p:my-4 prose-p:leading-7 prose-p:text-[#dde3da]
             prose-a:text-primary prose-a:no-underline hover:prose-a:underline
             prose-strong:text-white prose-strong:font-semibold
+            prose-u:underline prose-u:decoration-primary prose-u:underline-offset-4
             prose-ul:my-4 prose-li:my-2
             prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2
             prose-code:rounded prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-primary
