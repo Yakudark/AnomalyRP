@@ -11,6 +11,7 @@ import {
   LogOut,
   ShieldCheck,
   Home,
+  KeyRound,
   Link as LinkIcon,
   Images,
   ScrollText,
@@ -69,6 +70,12 @@ export function AdminSidebar() {
       icon: Settings,
       href: "/admin/settings",
       active: pathname === "/admin/settings",
+    },
+    {
+      label: "Compte admin",
+      icon: KeyRound,
+      href: "/admin/account",
+      active: pathname === "/admin/account",
     },
   ];
 

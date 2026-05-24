@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, Images, Link as LinkIcon, ScrollText } from "lucide-react";
+import { Home, Images, KeyRound, Link as LinkIcon, ScrollText } from "lucide-react";
 
 const settingLinks = [
   {
@@ -25,6 +25,12 @@ const settingLinks = [
     description: "Ajouter, masquer ou supprimer les images de la galerie.",
     href: "/admin/gallery",
     icon: Images,
+  },
+  {
+    title: "Compte admin",
+    description: "Modifier le mot de passe du compte administrateur connecte.",
+    href: "/admin/account",
+    icon: KeyRound,
   },
 ];
 

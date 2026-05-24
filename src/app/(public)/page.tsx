@@ -234,13 +234,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-                  Serveur{" "}
-                  <Link
-                    href="/admin/login"
-                    className="text-primary no-underline"
-                  >
-                    roleplay
-                  </Link>
+                  Serveur roleplay
                 </p>
                 <h1 className="text-3xl font-extrabold text-white md:text-5xl">
                   Anomaly RP
