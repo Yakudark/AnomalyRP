@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, KeyRound, Loader2, LockKeyhole } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -131,21 +131,47 @@ export default function AdminAccountPage() {
     setSaving(true);
 
     try {
-      const { error: signInError } = await supabaseBrowser.auth.signInWithPassword({
-        email,
-        password: currentPassword,
-      });
+      const { data: sessionData, error: sessionError } = await supabaseBrowser.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (signInError) {
-        throw new Error("Le mot de passe actuel est incorrect.");
+      if (sessionError || !accessToken) {
+        throw new Error("Session admin introuvable. Reconnectez-vous a l'administration.");
       }
 
-      const { error: updateError } = await supabaseBrowser.auth.updateUser({
+      const response = await fetch("/api/admin/account/password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string; passwordChangedAt?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Impossible de modifier le mot de passe.");
+      }
+
+      if (result.passwordChangedAt) {
+        window.localStorage.setItem("admin:lastPasswordChangedAt", result.passwordChangedAt);
+        window.dispatchEvent(
+          new CustomEvent("admin-password-changed", {
+            detail: { passwordChangedAt: result.passwordChangedAt },
+          })
+        );
+      }
+
+      const { error: signInError } = await supabaseBrowser.auth.signInWithPassword({
+        email,
         password: newPassword,
       });
 
-      if (updateError) {
-        throw updateError;
+      if (signInError) {
+        throw new Error("Mot de passe modifie, mais la session n'a pas pu etre actualisee. Reconnectez-vous.");
       }
 
       resetForm();
@@ -197,8 +223,8 @@ export default function AdminAccountPage() {
 
             {success && (
               <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-100">
-                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                <AlertTitle>Modification enregistree</AlertTitle>
+                <LockKeyhole className="h-4 w-4 text-emerald-300" />
+                <AlertTitle>Mot de passe verrouille</AlertTitle>
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
