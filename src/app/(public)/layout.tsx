@@ -1,3 +1,5 @@
+import { PublicNavbar } from "@/components/layout/PublicNavbar";
+
 export default function PublicLayout({
   children,
 }: Readonly<{
@@ -14,6 +16,7 @@ export default function PublicLayout({
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl px-6 py-8 md:px-10">
+        <PublicNavbar />
         <main className="min-w-0">
           <div className="fade-in-section">{children}</div>
         </main>
