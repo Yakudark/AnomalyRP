@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcul des Ventes Drive</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --matrix-black:   #000000;
+            --matrix-deep:    #030d03;
+            --matrix-card:    #060f06;
+            --matrix-border:  #0d2b0d;
+            --matrix-green:   #00ff41;
+            --matrix-mid:     #00c030;
+            --matrix-dim:     #006618;
+            --matrix-dimmer:  #003a0d;
+            --matrix-white:   #e8ffe8;
+            --font-mono:      'Share Tech Mono', monospace;
+            --font-ui:        'Rajdhani', sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--matrix-black);
+            color: var(--matrix-green);
+            font-family: var(--font-mono);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #matrix-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            opacity: 0.18;
+            pointer-events: none;
+        }
+
+        header, .container { position: relative; z-index: 1; }
+
+        header {
+            background: transparent;
+            border-bottom: 1px solid var(--matrix-dim);
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+
+        header .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            color: var(--matrix-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        header h1 {
+            font-family: var(--font-ui);
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            color: var(--matrix-green);
+            text-shadow: 0 0 20px var(--matrix-green), 0 0 40px var(--matrix-mid);
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        header .subline {
+            font-size: 0.72rem;
+            color: var(--matrix-dim);
+            letter-spacing: 0.2em;
+            margin-top: 0.5rem;
+        }
+
+        .card {
+            background-color: var(--matrix-card) !important;
+            border: 1px solid var(--matrix-border) !important;
+            border-radius: 2px !important;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.06), inset 0 0 60px rgba(0,0,0,0.4) !important;
+        }
+
+        .card-body { padding: 2rem; }
+
+        .form-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            color: var(--matrix-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        textarea.form-control {
+            background-color: #020902 !important;
+            border: 1px solid var(--matrix-dimmer) !important;
+            border-radius: 2px !important;
+            color: var(--matrix-mid) !important;
+            font-family: var(--font-mono) !important;
+            font-size: 0.82rem;
+            resize: vertical;
+            caret-color: var(--matrix-green);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        textarea.form-control::placeholder { color: var(--matrix-dimmer) !important; }
+
+        textarea.form-control:focus {
+            outline: none !important;
+            border-color: var(--matrix-dim) !important;
+            box-shadow: 0 0 0 2px rgba(0,255,65,0.08), 0 0 12px rgba(0,255,65,0.1) !important;
+            background-color: #030d03 !important;
+        }
+
+        .btn-matrix {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--matrix-green);
+            color: var(--matrix-green);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            padding: 0.75rem;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+        }
+
+        .btn-matrix:hover {
+            background: rgba(0, 255, 65, 0.08);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+            color: var(--matrix-white);
+        }
+
+        .btn-matrix:active { background: rgba(0, 255, 65, 0.18); }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--matrix-dim);
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: color 0.2s, text-shadow 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--matrix-green);
+            text-shadow: 0 0 12px rgba(0,255,65,0.4);
+        }
+
+        hr {
+            border-color: var(--matrix-border) !important;
+            opacity: 1 !important;
+            margin: 1.8rem 0;
+        }
+
+        .result-box {
+            border: 1px solid var(--matrix-border);
+            background: #020902;
+            border-radius: 2px;
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .result-box .result-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.3em;
+            color: var(--matrix-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-box .result-amount {
+            font-family: var(--font-ui);
+            font-size: clamp(2rem, 6vw, 3.2rem);
+            font-weight: 700;
+            color: var(--matrix-green);
+            text-shadow: 0 0 20px rgba(0,255,65,0.6), 0 0 40px rgba(0,255,65,0.2);
+            letter-spacing: 0.05em;
+        }
+
+        .matrix-error {
+            color: #ff4444;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-align: center;
+            padding: 1rem;
+            border: 1px solid #440000;
+            background: #0d0000;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<header>
+    <p class="eyebrow">// SYSTÈME DE GESTION //</p>
+    <h1>Calcul des Ventes Drive</h1>
+    <p class="subline">THERE IS NO SPOON &mdash; IL N'Y A QUE DES TRANSACTIONS</p>
+    <a href="index.html" class="back-link">&lt; Retour accueil</a>
+</header>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="salesData" class="form-label">// Données des ventes</label>
+                        <textarea id="salesData" class="form-control" rows="10" placeholder="Collez les données de ventes ici..."></textarea>
+                    </div>
+                    <button type="button" class="btn-matrix" onclick="calculateTotalSales()">
+                        &gt; Calculer le total_
+                    </button>
+                    <hr>
+                    <div id="result" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    /* ---- Animation pluie Matrix ---- */
+    (function () {
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx    = canvas.getContext('2d');
+        const chars  = 'アイウエオカキクケコサシスセソタチツテトナニヌネノABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&';
+        let cols, drops;
+        const FONT_SIZE = 14;
+
+        function init() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+            cols  = Math.floor(canvas.width / FONT_SIZE);
+            drops = Array(cols).fill(1);
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0,0,0,0.045)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = FONT_SIZE + 'px Share Tech Mono, monospace';
+            drops.forEach((y, i) => {
+                const ch = chars[Math.floor(Math.random() * chars.length)];
+                const bright = Math.random() > 0.93;
+                ctx.fillStyle = bright ? '#e8ffe8' : '#00c030';
+                ctx.fillText(ch, i * FONT_SIZE, y * FONT_SIZE);
+                if (y * FONT_SIZE > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            });
+        }
+
+        init();
+        setInterval(draw, 45);
+        window.addEventListener('resize', init);
+    })();
+
+    /* ---- Calcul des ventes ---- */
+    function calculateTotalSales() {
+        const data = document.getElementById('salesData').value;
+        const lines = data.split('\n');
+        let totalSum = 0;
+        let nextLineIsPrice = false;
+
+        lines.forEach(line => {
+            line = line.trim();
+            if (nextLineIsPrice) {
+                const amount = parseFloat(line.replace('$', '').trim());
+                if (!isNaN(amount)) totalSum += amount;
+                nextLineIsPrice = false;
+            }
+            if (line.startsWith("Prix:")) nextLineIsPrice = true;
+        });
+
+        const resultDiv = document.getElementById('result');
+
+        if (totalSum === 0) {
+            resultDiv.innerHTML = '<div class="matrix-error">// ERREUR : aucune vente détectée — vérifiez le format des données</div>';
+            return;
+        }
+
+        resultDiv.innerHTML = `
+            <div class="result-box">
+                <div class="result-label">// Total des ventes</div>
+                <div class="result-amount">$${totalSum.toFixed(2)}</div>
+            </div>`;
+    }
+</script>
+</body>
+</html>

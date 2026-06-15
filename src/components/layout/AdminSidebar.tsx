@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
+  Calculator,
   LayoutDashboard,
   FileText,
   Settings,
@@ -140,6 +141,12 @@ export function AdminSidebar() {
       icon: Images,
       href: "/admin/gallery",
       active: pathname === "/admin/gallery",
+    },
+    {
+      label: "Calculs",
+      icon: Calculator,
+      href: "/admin/calcul",
+      active: pathname === "/admin/calcul",
     },
     {
       label: "Paramètres",

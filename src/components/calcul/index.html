@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub de Gestion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --matrix-black:   #000000;
+            --matrix-deep:    #030d03;
+            --matrix-card:    #060f06;
+            --matrix-border:  #0d2b0d;
+            --matrix-green:   #00ff41;
+            --matrix-mid:     #00c030;
+            --matrix-dim:     #006618;
+            --matrix-dimmer:  #003a0d;
+            --matrix-white:   #e8ffe8;
+            --font-mono:      'Share Tech Mono', monospace;
+            --font-ui:        'Rajdhani', sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--matrix-black);
+            color: var(--matrix-green);
+            font-family: var(--font-mono);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #matrix-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            opacity: 0.18;
+            pointer-events: none;
+        }
+
+        header, .container { position: relative; z-index: 1; }
+
+        header {
+            background: transparent;
+            border-bottom: 1px solid var(--matrix-dim);
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+
+        header .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            color: var(--matrix-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        header h1 {
+            font-family: var(--font-ui);
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            color: var(--matrix-green);
+            text-shadow: 0 0 20px var(--matrix-green), 0 0 40px var(--matrix-mid);
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        header .subline {
+            font-size: 0.72rem;
+            color: var(--matrix-dim);
+            letter-spacing: 0.2em;
+            margin-top: 0.5rem;
+        }
+
+        .card {
+            background-color: var(--matrix-card) !important;
+            border: 1px solid var(--matrix-border) !important;
+            border-radius: 2px !important;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.06), inset 0 0 60px rgba(0,0,0,0.4) !important;
+            height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.15), inset 0 0 60px rgba(0,0,0,0.6) !important;
+            border-color: var(--matrix-dim) !important;
+        }
+
+        .card-body { 
+            padding: 2.5rem; 
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .tool-icon {
+            font-size: 3rem;
+            color: var(--matrix-mid);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 15px rgba(0,255,65,0.4);
+        }
+
+        .tool-title {
+            font-family: var(--font-ui);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--matrix-white);
+            margin-bottom: 1rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .tool-desc {
+            font-size: 0.8rem;
+            color: var(--matrix-dim);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .btn-matrix {
+            width: 100%;
+            display: inline-block;
+            background: transparent;
+            border: 1px solid var(--matrix-green);
+            color: var(--matrix-green);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            padding: 0.75rem;
+            border-radius: 2px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+        }
+
+        .btn-matrix:hover {
+            background: rgba(0, 255, 65, 0.08);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+            color: var(--matrix-white);
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<header>
+    <p class="eyebrow">// ACCÈS SÉCURISÉ //</p>
+    <h1>Portail de Gestion</h1>
+    <p class="subline">SÉLECTIONNEZ LE MODULE À INITIALISER_</p>
+</header>
+
+<div class="container py-5 flex-grow-1 d-flex align-items-center">
+    <div class="row w-100 justify-content-center g-4">
+        
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body">
+                    <div>
+                        <div class="tool-icon">🛒</div>
+                        <div class="tool-title">Ventes Drive</div>
+                        <div class="tool-desc">
+                            // Module d'analyse des transactions.<br>
+                            Compile les données brutes pour extraire le chiffre d'affaires total généré par le service Drive.
+                        </div>
+                    </div>
+                    <a href="ventes.html" class="btn-matrix">&gt; INITIALISER_</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body">
+                    <div>
+                        <div class="tool-icon">💰</div>
+                        <div class="tool-title">Paies Auto</div>
+                        <div class="tool-desc">
+                            // Module de traitement des salaires ESX.<br>
+                            Analyse les embeds Discord pour consolider les paiements par employé de manière automatisée.
+                        </div>
+                    </div>
+                    <a href="salaire.html" class="btn-matrix">&gt; INITIALISER_</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    /* ---- Animation pluie Matrix (identique aux autres pages) ---- */
+    (function () {
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx    = canvas.getContext('2d');
+        const chars  = 'アイウエオカキクケコサシスセソタチツテトナニヌネノABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&';
+        let cols, drops;
+        const FONT_SIZE = 14;
+
+        function init() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+            cols  = Math.floor(canvas.width / FONT_SIZE);
+            drops = Array(cols).fill(1);
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0,0,0,0.045)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = FONT_SIZE + 'px Share Tech Mono, monospace';
+            drops.forEach((y, i) => {
+                const ch = chars[Math.floor(Math.random() * chars.length)];
+                const bright = Math.random() > 0.93;
+                ctx.fillStyle = bright ? '#e8ffe8' : '#00c030';
+                ctx.fillText(ch, i * FONT_SIZE, y * FONT_SIZE);
+                if (y * FONT_SIZE > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            });
+        }
+
+        init();
+        setInterval(draw, 45);
+        window.addEventListener('resize', init);
+    })();
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
+  Calculator,
   FileText,
   Home,
   Image as ImageIcon,
@@ -221,6 +222,15 @@ export function CommandMenu({
           group: "Pages",
           searchText: "Galerie images photos captures publiques serveur",
           icon: ImageIcon,
+        },
+        {
+          id: "calculator",
+          title: "Calculateur",
+          description: "Modules publics de calcul des ventes Drive et des paies.",
+          href: "/calcul",
+          group: "Pages",
+          searchText: "Calculateur calcul ventes drive salaire paies auto outils modules",
+          icon: Calculator,
         },
         {
           id: "legal",

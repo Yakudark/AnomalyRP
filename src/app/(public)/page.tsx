@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BookOpen,
+  Calculator,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -17,6 +18,7 @@ import {
   Link as LinkIcon,
   MessageCircle,
   Music2,
+  Search,
   ShieldCheck,
   ShoppingBag,
   X,
@@ -24,6 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CommandMenu } from "@/components/shared/CommandMenu";
 import heroImage from "@/lib/asset/anomalyRP.jpg";
 import headerImage from "@/lib/asset/anomalyRP.png";
 import { defaultSiteSettings, loadSiteSettings } from "@/lib/site-settings";
@@ -102,6 +105,7 @@ export default function HomePage() {
   const [homeCarouselIndex, setHomeCarouselIndex] = useState(0);
   const [homeCarouselImages, setHomeCarouselImages] = useState<GalleryImage[]>([]);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     loadSiteSettings().then(setSettings);
@@ -285,7 +289,7 @@ export default function HomePage() {
         }}
         className="space-y-5"
       >
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-3 rounded-sm border border-primary/15 bg-[#081108]/80 p-2 shadow-[0_0_0_1px_rgba(66,233,62,0.08),0_12px_28px_rgba(0,0,0,0.35)] lg:grid-cols-4">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-3 rounded-sm border border-primary/15 bg-[#081108]/80 p-2 shadow-[0_0_0_1px_rgba(66,233,62,0.08),0_12px_28px_rgba(0,0,0,0.35)] lg:grid-cols-6">
           <TabsTrigger
             value="accueil"
             className="h-12 rounded-sm border border-transparent text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:ring-2 focus-visible:ring-primary/70 data-[state=active]:border-primary data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:shadow-[0_0_18px_rgba(66,233,62,0.26)]"
@@ -317,6 +321,21 @@ export default function HomePage() {
             Boutique
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
+          <Link
+            href="/calcul"
+            className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent px-3 text-sm font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+          >
+            <Calculator className="h-4 w-4" />
+            Calculateur
+          </Link>
+          <button
+            type="button"
+            className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent px-3 text-sm font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_22px_rgba(66,233,62,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-4 w-4" />
+            Recherche
+          </button>
         </TabsList>
 
         <TabsContent value="accueil" className="space-y-5">
@@ -532,6 +551,8 @@ export default function HomePage() {
           </section>
         </TabsContent>
       </Tabs>
+
+      <CommandMenu open={searchOpen} setOpen={setSearchOpen} />
 
       <footer className="anomaly-panel-soft p-6">
         <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">

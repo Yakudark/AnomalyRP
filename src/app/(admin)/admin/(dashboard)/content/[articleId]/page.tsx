@@ -218,6 +218,9 @@ export default function EditArticlePage() {
                     <optgroup label="Guides">
                         {sections.filter(s => s.category === 'guide').map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                     </optgroup>
+                    <optgroup label="Systeme">
+                        {sections.filter(s => s.category === 'system').map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                    </optgroup>
                  </select>
                </div>
 
