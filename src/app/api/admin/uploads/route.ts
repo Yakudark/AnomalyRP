@@ -11,6 +11,12 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/webp",
 ]);
 
+type UploadRequest = {
+  fileName?: string;
+  fileSize?: number;
+  contentType?: string;
+};
+
 const toErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
   if (typeof error === "object" && error !== null) {
@@ -30,21 +36,23 @@ export async function POST(request: Request) {
   try {
     await requireAuthenticatedUser(request);
 
-    const formData = await request.formData();
-    const file = formData.get("file");
+    const payload = (await request.json()) as UploadRequest;
+    const fileName = payload.fileName?.trim();
+    const fileSize = payload.fileSize;
+    const contentType = payload.contentType;
 
-    if (!(file instanceof File)) {
+    if (!fileName || typeof fileSize !== "number" || !contentType) {
       return NextResponse.json({ error: "Aucun fichier image fourni." }, { status: 400 });
     }
 
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    if (!ALLOWED_IMAGE_TYPES.has(contentType)) {
       return NextResponse.json(
         { error: "Format non accepte. Utilisez une image GIF, JPG, PNG ou WebP." },
         { status: 400 }
       );
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (fileSize > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: "L'image depasse la taille maximale autorisee de 20 Mo." },
         { status: 413 }
@@ -52,21 +60,23 @@ export async function POST(request: Request) {
     }
 
     const supabase = createSupabaseAdminClient();
-    const extension = file.name.split(".").pop() || "jpg";
-    const safeName = sanitizeFileName(file.name) || `image.${extension}`;
+    const extension = fileName.split(".").pop() || "jpg";
+    const safeName = sanitizeFileName(fileName) || `image.${extension}`;
     const path = `home/${Date.now()}-${safeName}`;
-    const bytes = await file.arrayBuffer();
 
-    const { error } = await supabase.storage.from(BUCKET).upload(path, bytes, {
-      contentType: file.type,
-      upsert: false,
-    });
+    const { data: signedUpload, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUploadUrl(path, { upsert: false });
 
     if (error) throw error;
 
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-    return NextResponse.json({ url: data.publicUrl });
+    return NextResponse.json({
+      path: signedUpload.path,
+      uploadToken: signedUpload.token,
+      url: data.publicUrl,
+    });
   } catch (error) {
     return NextResponse.json({ error: toErrorMessage(error) }, { status: 500 });
   }

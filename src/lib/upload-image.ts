@@ -19,13 +19,17 @@ export const uploadAdminImage = async (file: File) => {
     throw new Error("Session admin introuvable. Reconnecte-toi a l'administration.");
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
-
   const response = await fetch("/api/admin/uploads", {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fileName: file.name,
+      fileSize: file.size,
+      contentType: file.type,
+    }),
   });
 
   if (!response.ok) {
@@ -33,6 +37,16 @@ export const uploadAdminImage = async (file: File) => {
     throw new Error(payload?.error || "Impossible d'envoyer l'image.");
   }
 
-  const payload = (await response.json()) as { url: string };
+  const payload = (await response.json()) as { path: string; uploadToken: string; url: string };
+  const { error: uploadError } = await supabaseBrowser.storage
+    .from("site-images")
+    .uploadToSignedUrl(payload.path, payload.uploadToken, file, {
+      contentType: file.type,
+    });
+
+  if (uploadError) {
+    throw new Error(`Impossible d'envoyer l'image : ${uploadError.message}`);
+  }
+
   return payload.url;
 };
