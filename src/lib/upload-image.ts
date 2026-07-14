@@ -1,6 +1,17 @@
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/gif", "image/jpeg", "image/png", "image/webp"]);
+
 export const uploadAdminImage = async (file: File) => {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new Error("Format non accepte. Utilisez une image GIF, JPG, PNG ou WebP.");
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("L'image depasse la taille maximale autorisee de 20 Mo.");
+  }
+
   const { data } = await supabaseBrowser.auth.getSession();
   const token = data.session?.access_token;
 

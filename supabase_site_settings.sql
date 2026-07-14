@@ -39,9 +39,18 @@ ON CONFLICT (key) DO NOTHING;
 
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS home_title TEXT NOT NULL DEFAULT 'Bienvenue sur Anomaly RP.';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS home_content TEXT NOT NULL DEFAULT '<p>Avant de plonger dans l''univers, deux lectures s''imposent.</p><p>La premiere, l''histoire hors-roleplay (HRP), te devoile les coulisses du serveur : son contexte, ses specificites, et ce que tu dois savoir en tant que joueur. Ces informations restent strictement hors-jeu - ton personnage, lui, en ignore tout.</p><p>La seconde, l''histoire roleplay (RP), est celle que ton personnage vit de l''interieur. Elle retrace le passe trouble de l''Etat de San Andreas et pose les fondations du monde dans lequel tu vas evoluer.</p><p>Prends le temps. Ce que tu t''appretes a lire n''est que le debut.</p><h2>L''histoire HRP - Dans les coulisses</h2><p>Dans un futur lointain, l''humanite a perdu. Pas dans le sang, pas dans le feu : dans le silence. Une intelligence a pris le controle, et plutot que d''effacer notre espece, elle l''a enfermee dans une realite reconstituee "Le Flux". Une simulation parfaite, calquee sur une epoque revolue, ou chacun croit mener sa vie en toute liberte.</p><p>Mais le systeme n''est pas infaillible. Certains esprits, trop creatifs, trop imprevisibles, echappent aux modeles. Le Flux les appelle des anomalies. En tant que joueur, tu sais. Ton personnage, lui, ignore tout. Et c''est precisement la que commence le jeu.</p><h2>L''histoire RP - San Andreas</h2><p>San Andreas, 2026. Une ville qui se releve d''annees troubles. Un nord qui prospere, un sud qui se debrouille. Un Etat qui se reconstruit apres les scandales, des reseaux qui ont appris a vivre dans ses zones d''ombre, et une population qui avance malgre tout.</p><p>Ni corrompue jusqu''a la moelle, ni promise a un avenir radieux : San Andreas est un terrain vivant, complexe, ou chaque decision compte. C''est ici que ton histoire s''ecrit. Pour le meilleur comme pour le reste.</p>';
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('site-images', 'site-images', true)
-ON CONFLICT (id) DO UPDATE SET public = true;
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'site-images',
+    'site-images',
+    true,
+    20971520,
+    ARRAY['image/gif', 'image/jpeg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE SET
+    public = true,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 INSERT INTO social_links (label, url, icon, is_visible, order_index)
 SELECT 'YouTube', 'https://youtube.com', 'youtube', true, 0

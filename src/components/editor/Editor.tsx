@@ -433,7 +433,7 @@ export function Editor({ content, onChange, editable = true, uploadImage }: Edit
 
   return (
     <div ref={editorShellRef} className="flex flex-col rounded-lg border border-input bg-background/50 transition-all focus-within:ring-1 focus-within:ring-primary/50">
-      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
+      <input ref={imageInputRef} type="file" accept="image/gif,image/jpeg,image/png,image/webp" className="hidden" onChange={handleImageFileChange} />
       {/* Toolbar */}
       {editable && (
           <div className="sticky top-4 z-20 flex flex-wrap items-center gap-1 rounded-t-lg border-b border-white/5 bg-background/95 p-2 shadow-[0_8px_18px_rgba(0,0,0,0.25)] backdrop-blur">

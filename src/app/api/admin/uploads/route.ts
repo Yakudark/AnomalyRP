@@ -3,6 +3,13 @@ import { requireAuthenticatedUser } from "@/lib/admin-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase";
 
 const BUCKET = "site-images";
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 
 const toErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -30,8 +37,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Aucun fichier image fourni." }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Le fichier doit etre une image." }, { status: 400 });
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      return NextResponse.json(
+        { error: "Format non accepte. Utilisez une image GIF, JPG, PNG ou WebP." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "L'image depasse la taille maximale autorisee de 20 Mo." },
+        { status: 413 }
+      );
     }
 
     const supabase = createSupabaseAdminClient();

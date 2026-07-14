@@ -198,7 +198,7 @@ export default function GallerySettingsPage() {
         </div>
 
         <div>
-          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+          <input ref={fileInputRef} type="file" accept="image/gif,image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handleFileChange} />
           <Button
             onClick={() => fileInputRef.current?.click()}
             className="bg-red-500 text-white hover:bg-red-600"
